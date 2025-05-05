@@ -218,23 +218,31 @@ def main():
         if config["color"] is not None:
             color = config["color"]
         else:
-            metadata = client.part_get_metadata(
-                part["documentId"],
-                part["documentMicroversion"],
-                part["elementId"],
-                part["partId"],
-                part["configuration"],
-            )
-            if "appearance" in metadata:
-                colors = metadata["appearance"]["color"]
-                alpha = metadata["appearance"]["opacity"]
-                color = (
-                    np.array([colors["red"], colors["green"], colors["blue"], alpha])
-                    / 255.0
+            try:
+                metadata = client.part_get_metadata(
+                    part["documentId"],
+                    part["documentMicroversion"],
+                    part["elementId"],
+                    part["partId"],
+                    part["configuration"],
                 )
-                print(f"Part {part['name']} has color {color}.")
-            else:
+                if "appearance" in metadata:
+                    colors = metadata["appearance"]["color"]
+                    alpha = metadata["appearance"]["opacity"]
+                    color = (
+                        np.array(
+                            [colors["red"], colors["green"], colors["blue"], alpha]
+                        )
+                        / 255.0
+                    )
+                    print(f"Part {part['name']} has color {color}.")
+                else:
+                    color = [0.5, 0.5, 0.5, 1.0]
+            except:
                 color = [0.5, 0.5, 0.5, 1.0]
+                print(
+                    f"Part {part['name']} metadata not found. Assigning color {color}."
+                )
 
         # Obtain mass properties about that part
         if config["noDynamics"]:
