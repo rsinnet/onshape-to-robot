@@ -426,7 +426,11 @@ class RobotURDF(RobotDescription):
                     self.addSTL(matrix, os.path.basename(stl), color, name, "visual")
 
             entries = ["collision"] if self.use_material_tags and material_tag else []
-            if self.drawCollisions or material_tag.also_visual:
+            if (
+                self.drawCollisions
+                or self.use_material_tags
+                and material_tag.also_visual
+            ):
                 entries.append("visual")
             for entry in entries:
                 if shapes is None:
