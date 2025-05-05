@@ -100,7 +100,9 @@ occurrenceNameById = {
 
 features_init(client, config, root, workspaceId, assemblyId)
 
-FEATURES: FeatureSource = FeatureSource(client._api.onshape_client, element)
+
+def get_feature_source(element: OnshapeElement):
+    return FeatureSource(client._api.onshape_client, element)
 
 
 def getOccurrence(path):
@@ -165,11 +167,34 @@ trunk = None
 tagged_trunk = None
 relations = {}
 links = {}
-features = root["features"]
-for feature in features:
+
+root_features = [(feature, root) for feature in root["features"]]
+subasm_features = [
+    (feature, subasm)
+    for subasm in assembly["subAssemblies"]
+    for feature in subasm["features"]
+]
+# If we want to get DoFs from subassemblies, we need to look through all
+# features, not just those in the root assembly.
+features = root_features + subasm_features
+
+for feature, asm in features:
     if feature["featureType"] == "mateConnector":
         name = feature["featureData"]["name"]
-        path = (feature["featureData"]["occurrence"][0],)
+        try:
+            path = (feature["featureData"]["occurrence"][0],)
+        except:
+            print(f"Failed to extract occurrence from feature {name}")
+            print("feature:")
+            print(feature)
+            print()
+            print("featureData:")
+            print(feature["featureData"])
+            print()
+            print("occurence:")
+            print(feature["featureData"]["occurrence"])
+            print()
+            continue
         if name.startswith("link_"):
             name = name[len("link_") :]
             occurrences[path]["linkName"] = name
@@ -195,6 +220,8 @@ for feature in features:
         child = data["matedEntities"][0]["matedOccurrence"][0]
         parent = data["matedEntities"][1]["matedOccurrence"][0]
 
+        print(f"Feature type: {feature['featureType']}, Feature name: {data['name']}")
+
         if data["name"][0:3] == "dof":
             parts = data["name"].split("_")
             del parts[0]
@@ -214,14 +241,18 @@ for feature in features:
                 exit()
 
             limits = None
+            for assem in element.assemblies:
+                if assem.did == asm["documentId"] and assem.eid == asm["elementId"]:
+                    feature_source = get_feature_source(assem)
+                    break
             if data["mateType"] == "REVOLUTE" or data["mateType"] == "CYLINDRICAL":
                 jointType = "revolute"
                 if not config["ignoreLimits"]:
-                    limits = FEATURES.get_limits(data["name"])
+                    limits = feature_source.get_limits(data["name"])
             elif data["mateType"] == "SLIDER":
                 jointType = "prismatic"
                 if not config["ignoreLimits"]:
-                    limits = FEATURES.get_limits(data["name"])
+                    limits = feature_source.get_limits(data["name"])
             elif data["mateType"] == "FASTENED":
                 jointType = "fixed"
             else:
@@ -359,7 +390,7 @@ def appendFrame(key, frame):
 changed = True
 while changed:
     changed = False
-    for feature in features:
+    for feature, _ in features:
         if feature["suppressed"]:
             continue
 
