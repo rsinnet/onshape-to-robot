@@ -226,7 +226,7 @@ class Onshape:
             - dict: Dictionary containing all headers
         """
 
-        date = datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+        date = datetime.datetime.now(datetime.UTC).strftime("%a, %d %b %Y %H:%M:%S GMT")
         nonce = self._make_nonce()
         ctype = (
             headers.get("Content-Type")
