@@ -1,4 +1,5 @@
 """Test the SQLLite cache."""
+
 import os
 from dataclasses import (
     dataclass,

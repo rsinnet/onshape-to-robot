@@ -27,3 +27,11 @@ force_grid_wrap = 2
 use_parentheses = true
 ensure_newline_before_comments = true
 float_to_top = true
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+pythonpath = ["."]
+markers = [
+    "slow: mark test as slow to run",
+    "integration: mark test as integration test",
+]
