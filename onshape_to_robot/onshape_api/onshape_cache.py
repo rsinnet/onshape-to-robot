@@ -1,4 +1,5 @@
 """Cache objects locally for faster exports."""
+
 from pathlib import Path
 from typing import (
     Callable,
@@ -14,8 +15,10 @@ from sqlalchemy import (
     Text,
     create_engine,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import (
+    declarative_base,
+    sessionmaker,
+)
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 
