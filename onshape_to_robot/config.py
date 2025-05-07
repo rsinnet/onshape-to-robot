@@ -24,6 +24,9 @@ from .material_tags import load_material_tags
 
 def load_config(path: Optional[Union[Path, str]] = None) -> EasyDict[str, Any]:
     """Load configuration from the specified path or args."""
+    if path is not None:
+        return Config.from_path(Path(path))
+    path = os.getenv("ONSHAPE_TO_ROBOT_OUTPUT_DIR", None)
     return Config.from_path(Path(path)) if path else Config.from_argv()
 
 
