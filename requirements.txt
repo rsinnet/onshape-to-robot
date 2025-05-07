@@ -9,6 +9,7 @@ lxml
 numpy
 numpy-stl
 onshape_client
+parameterized
 pybullet
 pytest
 PyYAML
