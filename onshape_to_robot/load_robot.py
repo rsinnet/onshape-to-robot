@@ -220,7 +220,8 @@ for feature, asm in features:
         child = data["matedEntities"][0]["matedOccurrence"][0]
         parent = data["matedEntities"][1]["matedOccurrence"][0]
 
-        print(f"Feature type: {feature['featureType']}, Feature name: {data['name']}")
+        print(f"Feature type: {feature['featureType']}, Feature name: {data['name']}, "
+              f"mateType: {data['mateType']}")
 
         if data["name"][0:3] == "dof":
             parts = data["name"].split("_")
