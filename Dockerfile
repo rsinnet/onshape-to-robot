@@ -7,6 +7,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y meshlab openscad python-is-python3 python3-pip python3-setuptools python3-wheel \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install -U --no-cache-dir Cython pybullet
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
