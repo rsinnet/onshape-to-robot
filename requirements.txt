@@ -9,7 +9,9 @@ requests
 sphinx
 sphinx-rtd-theme
 transforms3d
+parameterized
+pytest
 python-dotenv
-
+PyYAML
 # Optional dependencies
 # pymeshlab
