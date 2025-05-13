@@ -1,5 +1,7 @@
 from __future__ import annotations
+import json
 import numpy as np
+from typing import Dict, List, Optional, Tuple
 from .config import Config
 from .message import error, info, bright, success, warning
 from .onshape_api.client import Client
@@ -60,6 +62,37 @@ class DOF:
             raise Exception(f"ERROR: body {body_id} is not part of this DOF")
 
 
+def get_assembly_definition_key(
+    doc_id: str, microversion_id: str, element_id: str, config_str: str
+) -> Tuple[str, str, str, str]:
+    """Create a unique key for an assembly definition."""
+    return (doc_id, microversion_id, element_id, config_str)
+
+
+def _feature_mating_two_occurrences(features):
+    """
+    Iterate over all valid mating feature with two occurrences
+    """
+    for feature in features:
+        if feature["featureType"] == "mate" and not feature["suppressed"]:
+            data = feature["featureData"]
+
+            if (
+                "matedEntities" not in data
+                or len(data["matedEntities"]) != 2
+                or len(data["matedEntities"][0]["matedOccurrence"]) == 0
+                or len(data["matedEntities"][1]["matedOccurrence"]) == 0
+            ):
+                continue
+
+            # occurrence_A = data["matedEntities"][0]["matedOccurrence"][0]
+            # occurrence_B = data["matedEntities"][1]["matedOccurrence"][0]
+            occurrence_A = tuple(data["matedEntities"][0]["matedOccurrence"])
+            occurrence_B = tuple(data["matedEntities"][1]["matedOccurrence"])
+
+            yield data, occurrence_A, occurrence_B
+
+
 class Assembly:
     """
     Main entry point to process an assembly
@@ -81,15 +114,20 @@ class Assembly:
         self.assembly_data: dict = {}
         # Map a (top-level) instance id to a body id
         self.current_body_id: int = 0
-        self.instance_body: dict[str, int] = {}
+        self.instance_body: Dict[str, int] = {}
         # Frames object
-        self.frames: list[Frame] = []
+        self.frames: List[Frame] = []
         # Loop closure constraints
         self.closures: list = []
         # Degrees of freedom
-        self.dofs: list[DOF] = []
+        self.dofs: List[DOF] = []
         # Features data
         self.features: dict = {}
+        # self.matevalues
+
+        self.all_features_by_assembly_key: Dict[tuple, dict] = {}
+        self.all_matevalues_by_assembly_key: Dict[tuple, Optional[dict]] = {}
+
         # Configuration values
         self.configuration_parameters: dict = {}
         # Dictionnary mapping items to their children in the tree
@@ -97,7 +135,7 @@ class Assembly:
         # Root nodes
         self.root_nodes: list = []
         # Overriden link names
-        self.link_names: dict[int, str] = {}
+        self.link_names: Dict[int, str] = {}
         # Relation indexed by target joints, values are [source joint, ratio]
         self.relations: dict = {}
 
@@ -106,6 +144,7 @@ class Assembly:
         self.check_configuration()
         self.retrieve_assembly()
         self.find_instances()
+        # self.load_all_features_and_matevalues()
         self.load_features()
         self.load_configuration()
         self.process_mates()
@@ -252,6 +291,9 @@ class Assembly:
             configuration=self.config.configuration,
         )
 
+        with open("foo.json", "w") as stream:
+            json.dump(self.assembly_data, stream, indent=4)
+
         self.microversion_id: str = self.assembly_data["rootAssembly"][
             "documentMicroversion"
         ]
@@ -270,7 +312,7 @@ class Assembly:
             if "type" in instance:
                 path = prefix + [instance["id"]]
                 self.get_occurrence(path)["instance"] = instance
-
+                print(bright(f"* Found instance: {instance}"))
                 if instance["type"] == "Assembly":
                     if not instance["suppressed"]:
                         d = instance["documentId"]
@@ -288,6 +330,149 @@ class Assembly:
                                     prefix + [instance["id"]], sub_assembly["instances"]
                                 )
 
+    def _fetch_and_store_assembly_details(
+        self,
+        did: str,
+        eid: str,
+        features_wmvid: str,
+        features_wmv: str,
+        matevalues_wvid: str,
+        matevalues_wv: str,
+        config_str: str,
+        is_root_assembly: bool = False,
+    ):
+        """
+        Fetch features and matevalues for a single assembly definition and store them.
+
+        The definition_mid is the microversion ID used for the storage key.
+        """
+        # The key for storage should consistently use the microversion that defines the assembly's structure.
+        # For subassemblies, features_wmvid is their documentMicroversion.
+        # For the root, features_wmvid is self.microversion_id (root's microversion).
+        definition_mid = features_wmvid
+        assembly_key = get_assembly_definition_key(did, definition_mid, eid, config_str)
+
+        print(
+            info(
+                f"  - Loading for Assembly (DID={did}, EID={eid}, DefinitionMID={definition_mid}, Config='{config_str}')"
+            )
+        )
+
+        try:
+            features = self.client.get_features(
+                did=did,
+                wmvid=features_wmvid,  # This is the ID for wmv (e.g. microversionId)
+                eid=eid,
+                wmv=features_wmv,  # This is 'm', 'v', or 'w'
+                configuration=config_str,
+            )
+            self.all_features_by_assembly_key[assembly_key] = features
+            if is_root_assembly:
+                self.features = features  # For compatibility
+        except Exception as e:
+            print(
+                warning(f"    WARNING: Could not load features for {assembly_key}: {e}")
+            )
+            self.all_features_by_assembly_key[assembly_key] = {"features": []}
+            if is_root_assembly:
+                self.features = {"features": []}
+
+        try:
+            matevalues = self.client.matevalues(
+                did=did,
+                wvid=matevalues_wvid,
+                eid=eid,
+                wv=matevalues_wv,
+                configuration=config_str,
+            )
+            self.all_matevalues_by_assembly_key[assembly_key] = matevalues
+            if is_root_assembly:
+                self.matevalues = matevalues  # For compatibility
+        except:
+            import traceback
+
+            print(
+                warning(
+                    f"    WARNING: Could not load matevalues for {assembly_key}: {traceback.format_exc()}"
+                )
+            )
+            self.all_matevalues_by_assembly_key[assembly_key] = None
+            if is_root_assembly:
+                self.matevalues = None
+
+        return assembly_key
+
+    def load_all_features_and_matevalues(self):
+        """
+        Load features and matevalues for the root assembly and all unique subassembly definitions.
+        """
+        print(bright("\n* Loading features and mate values for all assembly levels..."))
+
+        if not self.assembly_data or "rootAssembly" not in self.assembly_data:
+            raise Exception(
+                "ERROR: Root assembly data not loaded before load_all_features_and_matevalues."
+            )
+
+        # 1. Process Root Assembly
+        root_did = self.document_id
+        root_mid = self.microversion_id
+        root_eid = self.element_id
+        root_config_str = self.config.configuration
+
+        # Determine wv and wvid for root matevalues
+        if self.workspace_id:
+            root_matevalues_wv = "w"
+            root_matevalues_wvid = self.workspace_id
+        elif self.version_id:
+            root_matevalues_wv = "v"
+            root_matevalues_wvid = self.version_id
+
+        root_assembly_key = self._fetch_and_store_assembly_details(
+            did=root_did,
+            eid=root_eid,
+            features_wmvid=root_mid,
+            features_wmv="m",  # Features always from defining microversion
+            matevalues_wvid=root_matevalues_wvid,
+            matevalues_wv=root_matevalues_wv,
+            config_str=root_config_str,
+            is_root_assembly=True,
+        )
+
+        processed_assembly_keys = {root_assembly_key}
+
+        # 2. Process Subassemblies
+        if "subAssemblies" in self.assembly_data:
+            for sub_assembly_def_data in self.assembly_data["subAssemblies"]:
+                sub_did = sub_assembly_def_data["documentId"]
+                sub_mid = sub_assembly_def_data["documentMicroversion"]
+                sub_eid = sub_assembly_def_data["elementId"]
+                sub_config_str = sub_assembly_def_data["configuration"]
+
+                # Use sub_mid (microversion of the definition) for the key
+                current_key = get_assembly_definition_key(
+                    sub_did, sub_mid, sub_eid, sub_config_str
+                )
+                if current_key in processed_assembly_keys:
+                    continue
+
+                self._fetch_and_store_assembly_details(
+                    did=sub_did,
+                    eid=sub_eid,
+                    features_wmvid=sub_mid,
+                    features_wmv="m",  # Features from defining microversion
+                    matevalues_wvid=sub_mid,
+                    matevalues_wv="v",  # Matevalues also from defining microversion context
+                    config_str=sub_config_str,
+                    is_root_assembly=False,
+                )
+                processed_assembly_keys.add(current_key)
+
+        print(
+            success(
+                f"* Loaded features and mate values for {len(self.all_features_by_assembly_key)} unique assembly definitions."
+            )
+        )
+
     def load_features(self):
         """
         Load features
@@ -300,6 +485,7 @@ class Assembly:
             wmv="m",
             configuration=self.config.configuration,
         )
+        import json
 
         if not self.version_id:
             # TODO: This should support microversion in the future
@@ -350,11 +536,21 @@ class Assembly:
                     self.expression_parser.eval_expr(variable["value"])
                 )
 
+    def get_occurrence_full_path(self, last: str) -> tuple:
+        for key in self.occurrences.keys():
+            if key[-1] == last:
+                # print(f'Found full path for occurrence: {key}')
+                return key
+
     def get_occurrence(self, path: list):
         """
         Retrieve occurrence from its path
         """
-        return self.occurrences[tuple(path)]
+        try:
+            return self.occurrences[tuple(path)]
+        except KeyError:
+            path = self.get_occurrence_full_path(path[-1])
+            return self.occurrences[tuple(path)]
 
     def get_occurrence_transform(self, path: list) -> np.ndarray:
         """
@@ -387,6 +583,9 @@ class Assembly:
         """
         Make the given instance id a body
         """
+        if isinstance(id, str):
+            print(warning("Deprecated usage of make_body()"))
+            id = self.get_occurrence_full_path(id)
         self.instance_body[id] = self.current_body_id
         self.current_body_id += 1
 
@@ -414,20 +613,43 @@ class Assembly:
                 dof.body2_id = body1_id
 
     def translation(self, x: float, y: float, z: float) -> np.ndarray:
-        return np.array([[1, 0, 0, x],  
-                         [0, 1, 0, y],
-                         [0, 0, 1, z],
-                         [0, 0, 0, 1]])
+        return np.array([[1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1]])
+
+    def find_subassembly(self, key: str) -> dict:
+        for subassembly in self.assembly_data["subAssemblies"]:
+            if (
+                key["documentId"] == subassembly["documentId"]
+                and key["elementId"] == subassembly["elementId"]
+                and key["documentMicroversion"] == subassembly["documentMicroversion"]
+            ):
+                return subassembly
+
+    def find_first_part(self, first_inst, depth: int = 1):
+        if first_inst["type"] != "Assembly":
+            return first_inst
+
+        subassembly = self.find_subassembly(first_inst)
+        first_sub_inst = subassembly["instances"][0]
+        if first_sub_inst["type"] == "Assembly":
+            return self.find_first_part(first_sub_inst, depth + 1)
+        return first_sub_inst
 
     def process_mates(self):
         """
         Pre-assign all top-level instances to a separate body id
         """
-        top_level_instances = self.assembly_data["rootAssembly"]["instances"]
-        self.make_body(top_level_instances[0]["id"])
+        # top_level_instances = self.assembly_data["rootAssembly"]["instances"]
+        # self.make_body(top_level_instances[0]["id"])
+
+        # Find the first part instance, which may be in a subassembly.
+        first_inst = self.assembly_data["rootAssembly"]["instances"][0]
+        first_part = self.find_first_part(first_inst)
+        print(bright(f"* Found first part: {first_part}"))
+        self.make_body(self.get_occurrence_full_path(first_part["id"]))
 
         # We first search for DOFs
         for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
+            # print(f"occurrence_A: {occurrence_A}, occurrence_B: {occurrence_B}")
             if data["name"].startswith("dof_"):
                 # Process the DOF name, removing dof prefix and inv suffix
                 parts = data["name"].split("_")
@@ -550,14 +772,23 @@ class Assembly:
                 else:
                     self.instance_body[child] = INSTANCE_IGNORE
 
-        # Checking that all intances are assigned to a body
+        # Checking that all instances are assigned to a body
+        # TODO(RWS): This needs to check all parts, not just top-level instances.
         for instance in self.assembly_data["rootAssembly"]["instances"]:
-            if instance["id"] not in self.instance_body and not instance["suppressed"]:
-                self.make_body(instance["id"])
+            if (
+                self.get_occurrence_full_path(instance["id"]) not in self.instance_body
+                and not instance["suppressed"]
+            ):
+                if instance["type"] == "Assembly":
+                    print(f"Skipping assembly instance: {instance['name']}")
+                    continue
+                print(bright(f"Unassigned body: {instance}"))
+                print(self.instance_body)
+                self.make_body(self.get_occurrence_full_path(instance["id"]))
 
         # Processing loop closing frames
         for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
-            is_hinge_closure = data["mateType"]== "REVOLUTE"
+            is_hinge_closure = data["mateType"] == "REVOLUTE"
 
             if data["name"].startswith("closing_"):
                 for k in 0, 1:
@@ -639,18 +870,25 @@ class Assembly:
         Perform checks on the produced tree
         """
         self.body_in_tree = []
+        print(f"inst: {self.instance_body}")
+        print(f"Inst bodies: {len(self.instance_body.values())}")
         for body_id in self.instance_body.values():
             if body_id != INSTANCE_IGNORE and body_id not in self.body_in_tree:
                 self.build_tree(body_id)
+            else:
+                print(f"body_id: {body_id}")
 
         print(success(f"* Found {len(self.root_nodes)} root nodes:"))
         for root_node in self.root_nodes:
-            print(success(f"  - {self.body_instance(root_node)['name']}"))
+            body_instance = self.body_instance(root_node)
+            print(success(f"  - {body_instance['name']}"))
 
     def build_tree(self, root_node: int):
         """
         Building a tree starting a root_node
         """
+        print(f"Building tree for body_id: {root_node}")
+
         # Append the root node
         self.root_nodes.append(root_node)
 
@@ -684,25 +922,17 @@ class Assembly:
                     exploring.append(child)
 
     def feature_mating_two_occurrences(self):
-        """
-        Iterate over all valid mating feature with two occurrences
-        """
-        for feature in self.assembly_data["rootAssembly"]["features"]:
-            if feature["featureType"] == "mate" and not feature["suppressed"]:
-                data = feature["featureData"]
-
-                if (
-                    "matedEntities" not in data
-                    or len(data["matedEntities"]) != 2
-                    or len(data["matedEntities"][0]["matedOccurrence"]) == 0
-                    or len(data["matedEntities"][1]["matedOccurrence"]) == 0
-                ):
-                    continue
-
-                occurrence_A = data["matedEntities"][0]["matedOccurrence"][0]
-                occurrence_B = data["matedEntities"][1]["matedOccurrence"][0]
-
-                yield data, occurrence_A, occurrence_B
+        for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
+            self.assembly_data["rootAssembly"]["features"]
+        ):
+            yield data, occurrence_A, occurrence_B
+        for subassembly in self.assembly_data["subAssemblies"]:
+            for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
+                subassembly["features"]
+            ):
+                yield data, self.get_occurrence_full_path(
+                    occurrence_A[-1]
+                ), self.get_occurrence_full_path(occurrence_B[-1])
 
     def get_feature_by_id(self, feature_id: str):
         """
@@ -878,11 +1108,20 @@ class Assembly:
         Get the (first) instance associated with a given body
         """
         for instance in self.assembly_data["rootAssembly"]["instances"]:
+            instance_path = self.get_occurrence_full_path(instance["id"])
             if (
-                instance["id"] in self.instance_body
-                and self.instance_body[instance["id"]] == body_id
+                instance_path in self.instance_body
+                and self.instance_body[instance_path] == body_id
             ):
                 return instance
+        for subassembly in self.assembly_data["subAssemblies"]:
+            for instance in subassembly["instances"]:
+                instance_path = self.get_occurrence_full_path(instance["id"])
+                if (
+                    instance_path in self.instance_body
+                    and self.instance_body[instance_path] == body_id
+                ):
+                    return instance
 
         return None
 
@@ -891,7 +1130,7 @@ class Assembly:
         Retrieve all occurrences associated to a given body id
         """
         for occurrence in self.assembly_data["rootAssembly"]["occurrences"]:
-            key = occurrence["path"][0]
+            key = tuple(occurrence["path"])
             if key in self.instance_body and self.instance_body[key] == body_id:
                 yield occurrence
 

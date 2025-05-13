@@ -146,8 +146,8 @@
           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
         </inertial>
       </link>
-      <!-- Link revolute_joint -->
-      <link name="revolute_joint">
+      <!-- Link box_primitive -->
+      <link name="box_primitive">
         <inertial>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <mass value="1e-09"/>
@@ -169,9 +169,32 @@
             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
           </geometry>
         </collision>
+      </link>
+      <!-- Frame box_bottom (dummy link + fixed joint) -->
+      <link name="box_bottom">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-9"/>
+          <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
+      </link>
+      <joint name="box_bottom_frame" type="fixed">
+        <origin xyz="0.0182936 0.0244218 0.0508" rpy="0 -0 0"/>
+        <parent link="box_primitive"/>
+        <child link="box_bottom"/>
+        <axis xyz="0 0 0"/>
+      </joint>
+      <!-- Link box_primitive_2 -->
+      <link name="box_primitive_2">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
         <!-- Part box_primitive_2 -->
         <visual>
-          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
           <geometry>
             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
           </geometry>
@@ -180,17 +203,25 @@
           </material>
         </visual>
         <collision>
-          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
           <geometry>
             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
           </geometry>
         </collision>
       </link>
-      <!-- Joint from base_link to revolute_joint -->
-      <joint name="base_link_to_revolute_joint" type="fixed">
+      <!-- Joint from box_primitive to box_primitive_2 -->
+      <joint name="joint_1" type="revolute">
+        <origin xyz="0.0182936 0.0244218 0.0254" rpy="0 -0 0"/>
+        <parent link="box_primitive"/>
+        <child link="box_primitive_2"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+      </joint>
+      <!-- Joint from base_link to box_primitive -->
+      <joint name="base_link_to_box_primitive" type="fixed">
         <origin xyz="0 0 0" rpy="0 -0 0"/>
         <parent link="base_link"/>
-        <child link="revolute_joint"/>
+        <child link="box_primitive"/>
         <axis xyz="0 0 1"/>
         <limit effort="10" velocity="10"/>
       </joint>
@@ -213,8 +244,8 @@
           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
         </inertial>
       </link>
-      <!-- Link composite_assembly -->
-      <link name="composite_assembly">
+      <!-- Link box_primitive -->
+      <link name="box_primitive">
         <inertial>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <mass value="1e-09"/>
@@ -236,22 +267,6 @@
             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
           </geometry>
         </collision>
-        <!-- Part box_primitive_2 -->
-        <visual>
-          <origin xyz="0 0 0" rpy="0 -0 0"/>
-          <geometry>
-            <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-          </geometry>
-          <material name="box_primitive_2_material">
-            <color rgba="0.615686 0.811765 0.929412 1.0"/>
-          </material>
-        </visual>
-        <collision>
-          <origin xyz="0 0 0" rpy="0 -0 0"/>
-          <geometry>
-            <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-          </geometry>
-        </collision>
       </link>
       <!-- Frame box_top (dummy link + fixed joint) -->
       <link name="box_top">
@@ -264,15 +279,62 @@
       </link>
       <joint name="box_top_frame" type="fixed">
         <origin xyz="0.0182936 0.0244218 0.0508" rpy="0 -0 0"/>
-        <parent link="composite_assembly"/>
+        <parent link="box_primitive"/>
         <child link="box_top"/>
         <axis xyz="0 0 0"/>
       </joint>
-      <!-- Joint from base_link to composite_assembly -->
-      <joint name="base_link_to_composite_assembly" type="fixed">
+      <!-- Frame box_bottom (dummy link + fixed joint) -->
+      <link name="box_bottom">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-9"/>
+          <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
+      </link>
+      <joint name="box_bottom_frame" type="fixed">
+        <origin xyz="0.0182936 0.0244218 0.0508" rpy="0 -0 0"/>
+        <parent link="box_primitive"/>
+        <child link="box_bottom"/>
+        <axis xyz="0 0 0"/>
+      </joint>
+      <!-- Link box_primitive_2 -->
+      <link name="box_primitive_2">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive_2 -->
+        <visual>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
+          </geometry>
+          <material name="box_primitive_2_material">
+            <color rgba="0.615686 0.811765 0.929412 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Joint from box_primitive to box_primitive_2 -->
+      <joint name="joint_1" type="revolute">
+        <origin xyz="0.0182936 0.0244218 0.0254" rpy="0 -0 0"/>
+        <parent link="box_primitive"/>
+        <child link="box_primitive_2"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+      </joint>
+      <!-- Joint from base_link to box_primitive -->
+      <joint name="base_link_to_box_primitive" type="fixed">
         <origin xyz="0 0 0" rpy="0 -0 0"/>
         <parent link="base_link"/>
-        <child link="composite_assembly"/>
+        <child link="box_primitive"/>
         <axis xyz="0 0 1"/>
         <limit effort="10" velocity="10"/>
       </joint>
