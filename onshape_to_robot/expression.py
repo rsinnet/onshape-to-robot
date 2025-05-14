@@ -93,15 +93,16 @@ class ExpressionParser:
         elif isinstance(node, ast.UnaryOp):  # e.g., -1
             return self.operators[type(node.op)](self.eval_(node.operand))
         elif isinstance(node, ast.Name):
+            node_id = node.id
             if (
-                node.id.lower() not in self.variables
+                node_id not in self.variables
                 and self.variables_lazy_loading is not None
             ):
                 self.variables_lazy_loading()
                 self.variables_lazy_loading = None
-            if node.id.lower() not in self.variables:
+            if node_id not in self.variables:
                 raise ValueError(f"Unknown variable in expression: {node.id}")
-            return self.variables[node.id.lower()]
+            return self.variables[node_id]
         elif isinstance(node, ast.Call):
             if node.func.id not in self.functions:
                 raise ValueError(f"Unknown function in expression: {node.func.id}")
