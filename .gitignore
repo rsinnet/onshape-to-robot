@@ -6,3 +6,4 @@ data
 dist
 build
 onshape_to_robot.egg-info
+.venv/
