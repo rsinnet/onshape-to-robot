@@ -1,0 +1,10 @@
+/.git
+/.gitignore
+/.venv
+/.vscode
+/build/
+/docs/
+/dist/
+/Makefile
+/onshape_to_robot.egg-info/
+/Dockerfile
