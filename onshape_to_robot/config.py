@@ -1,6 +1,7 @@
 from __future__ import annotations
 from sys import exit
 import re
+from typing import Optional
 import os
 import commentjson as json
 from .message import error, bright, info
@@ -108,6 +109,20 @@ class Config:
         self.robot_name: str = self.get("robot_name", None, required=False)
         self.output_filename: str = self.get("output_filename", "robot")
         self.assets_directory: str = self.get("assets_directory", "assets")
+        self.package_name: Optional[str] = self.get("package_name", None)
+        self.package_type: Optional[str] = self.get("package_type", None)
+        ALLOWED_PACKAGE_TYPES = {None, "ament", "catkin"}
+        if self.package_type not in ALLOWED_PACKAGE_TYPES:
+            raise ValueError(
+                "package_type '{}' must be one of: {}".format(
+                    self.package_type, list(ALLOWED_PACKAGE_TYPES)
+                )
+            )
+        if self.package_type is not None:
+            self.assets_directory = "meshes"
+            print(bright("* Overriding assets directory due to ROS package selection."))
+            if self.package_name is None:
+                print(error("Config option package_name must be specified for ROS packages."))
 
         # Main settings
         self.document_id: str = self.get("document_id", required=False)
@@ -182,3 +197,8 @@ class Config:
                     raise Exception(f"ERROR: Processor {entry} not found")
 
                 self.processors.append(processor(self))
+
+    @property
+    def create_ros_package(self) -> bool:
+        """Return True if a ROS package should be created."""
+        return self.package_type is not None

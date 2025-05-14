@@ -1,8 +1,10 @@
 def main():
     import os
     import sys
+    from pathlib import Path
     import pickle
     from dotenv import load_dotenv, find_dotenv
+    from . import ros_package
     from .config import Config
     from .message import error, info
     from .robot_builder import RobotBuilder
@@ -50,10 +52,19 @@ def main():
         for processor in config.processors:
             processor.process(robot)
 
-        exporter.write_xml(
-            robot,
-            config.output_directory + "/" + config.output_filename + "." + exporter.ext,
-        )
+        model_filename = f"{config.output_filename}.{exporter.ext}"
+        model_dir = Path(config.output_directory)
+        if config.create_ros_package:
+            model_dir /= "urdf"
+            model_dir.mkdir(exist_ok=True)
+            ros_package.generate_package(
+                config.package_name,
+                config.package_type,
+                config.robot_name,
+                config.output_format,
+                Path(config.output_directory),
+            )
+        exporter.write_xml(robot, model_dir / model_filename)
 
         for command in config.post_import_commands:
             print(info(f"* Running command: {command}"))

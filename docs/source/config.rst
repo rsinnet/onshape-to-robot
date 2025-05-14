@@ -34,12 +34,17 @@ Here is an example of complete ``config.json`` file, with details below:
         // Assets directory (default: "assets")
         "assets_dir": "assets",
 
+        // If set to either ament or catkin, generate a ROS package.
+        "package_type": null,
+        // When making a ROS package, a package_name is required.
+        "package_name": null,
+
         // If you don't use "url", you can alternatively specify the following
         // The Onshape document id to parse, see "getting started" (optional)
         "document_id": "document-id",
         // The document version id (optional)
         "version_id": "version-id",
-        // The workspace id (optional) 
+        // The workspace id (optional)
         "workspace_id": "workspace-id",
         // Element id (optional)
         "element_id": "element-id",
@@ -122,6 +127,16 @@ This is the name of the output file without extension. By default "robot" (for e
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This is the directory where the assets (like meshes) will be stored.
+
+``package_type`` *(optional)*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In addition to the robot description file, also generate a package for ROS1/ROS2 with options ``ament`` or ``catkin``.
+
+``package_name`` *(optional)*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If generating a ROS package (see ``package_type``), a ROS package name is required.
 
 ``assembly_name`` *(optional)*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
