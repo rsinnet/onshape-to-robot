@@ -87,7 +87,7 @@ class Client:
         )
 
     @cache_response
-    def get_features(self, did, wvid, eid, wmv="w", configuration="default"):
+    def get_features(self, did, wmvid, eid, wmv="w", configuration="default"):
         """
         Gets the feature list for specified document / workspace / part studio.
 
@@ -101,7 +101,7 @@ class Client:
         """
 
         return self.request(
-            f"/api/assemblies/d/{escape(did)}/{escape(wmv)}/{escape(wvid)}/e/{escape(eid)}/features",
+            f"/api/assemblies/d/{escape(did)}/{escape(wmv)}/{escape(wmvid)}/e/{escape(eid)}/features",
             query={"configuration": configuration},
         )
 
@@ -169,11 +169,8 @@ class Client:
             headers=req_headers,
         )
 
-    def matevalues(self, did, wid, eid, configuration="default"):
-        return self.request(
-            f"/api/assemblies/d/{escape(did)}/w/{escape(wid)}/e/{escape(eid)}/matevalues",
-            query={"configuration": configuration},
-        )
+    def matevalues(self, did, wvid, eid, wv="w", configuration="default"):
+        return self.request(f"/api/assemblies/d/{escape(did)}/{escape(wv)}/{escape(wvid)}/e/{escape(eid)}/matevalues")
 
     @cache_response
     def part_get_metadata(
