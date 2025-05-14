@@ -1,0 +1,5 @@
+alias exp='python -m onshape_to_robot.export'
+function rviz {
+    cd ~/proj/onshape-to-robot
+    ROBOT_PACKAGE="${1%/}" docker compose up ros2
+}
