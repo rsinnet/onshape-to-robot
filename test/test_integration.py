@@ -50,8 +50,8 @@ class TestIntegration(TestHarness):
 
         actual = self.load_urdf()
 
-        logging.info("Actual:\n%s", actual)
         logging.info("Expected:\n%s", expected)
+        logging.info("Actual:\n%s", actual)
 
         self.copy_config_dir(overwrite=True)
 

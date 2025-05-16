@@ -1,14 +1,34 @@
 from __future__ import annotations
+
 import json
+from typing import (
+    Annotated,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+)
+
 import numpy as np
-from typing import Dict, Generator, List, Optional, Tuple
+from annotated_types import Len
+
 from .config import Config
-from .message import error, info, bright, success, warning
+from .expression import ExpressionParser
+from .message import (
+    bright,
+    error,
+    info,
+    success,
+    warning,
+)
 from .onshape_api.client import Client
 from .robot import Joint
-from .expression import ExpressionParser
 
 INSTANCE_IGNORE = -1
+
+InstanceId = Annotated[str, Len(17, 17)]
+OccurrencePath = Tuple[InstanceId, ...]
 
 
 class Frame:
@@ -62,9 +82,18 @@ class DOF:
             raise Exception(f"ERROR: body {body_id} is not part of this DOF")
 
 
-def _feature_mating_two_occurrences(features) -> Generator[Tuple[Dict, Tuple, Tuple]]:
+def _feature_mating_two_occurrences(
+    features: dict,
+) -> Generator[Tuple[dict, OccurrencePath, OccurrencePath]]:
     """
-    Iterate over all valid mating feature with two occurrences
+    Iterate over all valid mating feature with two occurrences.
+
+    Note that the occurrence paths are relative to the assembly and
+    are therefore not full paths for any subassembly.
+
+    Returns:
+        The feature data and the two occurrence relative paths.
+
     """
     for feature in features:
         if feature["featureType"] == "mate" and not feature["suppressed"]:
@@ -94,7 +123,7 @@ class Assembly:
     def __init__(self, config: Config):
         self.config: Config = config
 
-        self.client = None # use from_config() instead of __init__()
+        self.client = None  # use from_config() instead of __init__()
         self.expression_parser = ExpressionParser()
         self.expression_parser.variables_lazy_loading = self.load_variables
 
@@ -133,7 +162,7 @@ class Assembly:
 
         # Every instance in the root assembly and subassemblies
         # is an occurrence in the root assembly
-        self.occurrences: dict = {}
+        self.occurrences: Dict[OccurrencePath, dict] = {}
 
     @classmethod
     def from_config(cls, config: Config) -> Assembly:
@@ -143,18 +172,25 @@ class Assembly:
         assembly.load()
         return assembly
 
-    def load(self):
+    def build_maps(self) -> None:
+        """Build maps useful for processing the assembly."""
+        self.build_occurrences_map()
+        self.find_instances()
+        self.load_configuration()
+
+    def load(self) -> None:
         """Load the assembly."""
         self.ensure_workspace_or_version()
         self.find_assembly()
         self.check_configuration()
         self.retrieve_assembly()
-        self.find_occurrences()
-        self.find_instances()
         self.load_features()
+
+        self.build_maps()
+
         with open("features.json", "w") as stream:
             json.dump(self.features, stream, indent=4)
-        self.load_configuration()
+
         self.process_mates()
         self.build_trees()
         self.find_relations()
@@ -306,17 +342,19 @@ class Assembly:
             "documentMicroversion"
         ]
 
-    def find_occurrences(self):
+    def build_occurrences_map(self):
         """
-        Find all occurrences in the root assembly.
+        Create a map to look up occurrence by full path.
         """
         for occurrence in self.assembly_data["rootAssembly"]["occurrences"]:
             self.occurrences[tuple(occurrence["path"])] = occurrence
 
-    def find_instances(self, prefix: list = [], instances=None):
+    def find_instances(self, prefix: Optional[List[str]] = None, instances=None):
         """
-        Walking all the instances and associating them with their occurrences
+        Walking all the instances and associating them with their occurrences.
         """
+        if prefix is None:
+            prefix = []
         if instances is None:
             instances = self.assembly_data["rootAssembly"]["instances"]
 
@@ -418,6 +456,7 @@ class Assembly:
         try:
             return self.occurrences[tuple(path)]
         except KeyError:
+            # TODO(RWS): This is bad because it's not unique, fix it.
             path = self.get_occurrence_full_path(path[-1])
             return self.occurrences[tuple(path)]
 
@@ -488,14 +527,19 @@ class Assembly:
     def translation(self, x: float, y: float, z: float) -> np.ndarray:
         return np.array([[1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1]])
 
-    def find_subassembly(self, key: str) -> dict:
+    def find_subassembly(self, key: Dict[str, str]) -> dict:
+        """Look up a subassembly by its did/mid/eid."""
+        did = key["documentId"]
+        mid = key["documentMicroversion"]
+        eid = key["elementId"]
         for subassembly in self.assembly_data["subAssemblies"]:
             if (
-                key["documentId"] == subassembly["documentId"]
-                and key["elementId"] == subassembly["elementId"]
-                and key["documentMicroversion"] == subassembly["documentMicroversion"]
+                did == subassembly["documentId"]
+                and mid == subassembly["documentMicroversion"]
+                and eid == subassembly["elementId"]
             ):
                 return subassembly
+        raise ValueError(f"Subassembly not found: d/{did}/m/{mid}/e/{eid}")
 
     def find_first_part(self, first_inst, depth: int = 1):
         if first_inst["type"] != "Assembly":
@@ -524,11 +568,12 @@ class Assembly:
         first_part = self.find_first_part(first_inst)
         print(bright(f"* Found first part: {first_part}"))
         # Make the first body, which will be the root.
+        # TODO(RWS): This get full path has bugs, because IDs are shared when subassemblies are used multiple times.
         self.make_body(self.get_occurrence_full_path(first_part["id"]))
 
         # We first search for DOFs
         for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
-            # print(f"occurrence_A: {occurrence_A}, occurrence_B: {occurrence_B}")
+            print(f"occurrence_A: {occurrence_A}, occurrence_B: {occurrence_B}")
             if data["name"].startswith("dof_"):
                 # Process the DOF name, removing dof prefix and inv suffix
                 parts = data["name"].split("_")
@@ -806,18 +851,44 @@ class Assembly:
                 elif child not in exploring:
                     exploring.append(child)
 
-    def feature_mating_two_occurrences(self) -> Generator[Tuple[str, Tuple, Tuple]]:
+    def feature_mating_two_occurrences(
+        self,
+    ) -> Generator[Tuple[str, OccurrencePath, OccurrencePath]]:
+        """
+        Return all features that mate two occurrences at any assembly level.
+
+        The returned occurrences are full paths, i.e., relative to the
+        root assembly even if the feature was found in a subassembly.
+        """
+
         for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
             self.assembly_data["rootAssembly"]["features"]
         ):
             yield data, occurrence_A, occurrence_B
-        for subassembly in self.assembly_data["subAssemblies"]:
-            for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
-                subassembly["features"]
-            ):
-                yield data, self.get_occurrence_full_path(
-                    occurrence_A[-1]
-                ), self.get_occurrence_full_path(occurrence_B[-1])
+
+        # There is only one root assembly, but there can be multiple
+        # occurrences of a subassembly. This means looping through all
+        # subassemblies isn't quite correct because it only gives us one
+        # loop iteration per subassembly, but we want one per occurrence.
+
+        # To achieve this, we loop through every occurrence. For each
+        # occurrence that is an assembly, go through the features of that
+        # subassembly.
+
+        # In subassemblies, the occurrences are referred to by relative paths,
+        # so we need to convert them to full paths with respect to the root
+        # assembly.
+
+        for path, occurrence in self.occurrences.items():
+            if occurrence["instance"]["type"] == "Assembly":
+                subassembly = self.find_subassembly(occurrence["instance"])
+                for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
+                    subassembly["features"]
+                ):
+                    # Convert relative paths to full paths
+                    occurrence_A = path + occurrence_A
+                    occurrence_B = path + occurrence_B
+                    yield data, occurrence_A, occurrence_B
 
     def get_feature_by_id(self, feature_id: str):
         """

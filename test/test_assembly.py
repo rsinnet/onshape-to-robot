@@ -28,19 +28,26 @@ def _load_test_cases():
 
 class TestAssembly(TestHarness):
 
+    def setUp(self) -> None:
+        """Enable verbose logging and set up the test harness."""
+        self.maxDiff = None
+        super().setUp()
+
     @parameterized.expand(_load_test_cases())
     def test_feature_mating_two_occurrences(
         self, name, assembly_data, features, expected
     ):
 
         config = self.make_config(
-            document_id="43aaee52dd90f8f1b794a9ae",
-            element_id="885eeed9f23c6ef38371a3d0",
-            document_microversion="a7f0ea20048ff27ddad7ad40",
+            document_id="",
+            document_microversion="",
+            element_id=""
         )
         assembly = Assembly(config)
         assembly.assembly_data = assembly_data
         assembly.features = features
+        assembly.build_maps()
+
         mates = [
             {"data": data, "occurrenceA": occurrenceA, "occurrenceB": occurrenceB}
             for data, occurrenceA, occurrenceB in assembly.feature_mating_two_occurrences()
