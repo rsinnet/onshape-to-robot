@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import (
     Annotated,
     Dict,
@@ -54,7 +55,7 @@ class DOF:
         name: str,
         joint_type: str,
         T_world_mate: np.ndarray,
-        limits: tuple | None,
+        limits: Optional[Tuple[float, float]],
         axis: np.ndarray = np.array([0.0, 0.0, 1.0]),
     ):
         self.body1_id: int = body1_id
@@ -62,8 +63,13 @@ class DOF:
         self.name: str = name
         self.joint_type: str = joint_type
         self.T_world_mate: np.ndarray = T_world_mate
-        self.limits: tuple | None = limits
+        self.limits: Optional[Tuple[float, float]] = limits
         self.axis: np.ndarray = axis
+
+        limits_str = ""
+        if limits is not None:
+            limits_str = f"[{round(limits[0], 3)}: {round(limits[1], 3)}]"
+        print(success(f"+ Found DOF: {name} ({joint_type}) {limits_str}"))
 
     def flip(self, flip_limits: bool = True):
         if flip_limits and self.limits is not None:
@@ -134,8 +140,8 @@ class Assembly:
         # All (raw) data from assembly
         self.assembly_data: dict = {}
         self.current_body_id: int = 0
-        # Map an instance id to a body id
-        self.instance_body: Dict[str, int] = {}
+        # Map an occurrence to a body id
+        self.instance_body: Dict[OccurrencePath, int] = {}
         # Frames object
         self.frames: List[Frame] = []
         # Loop closure constraints
@@ -185,6 +191,7 @@ class Assembly:
         self.check_configuration()
         self.retrieve_assembly()
         self.load_features()
+        self.populate_missing_instance_fields()
 
         self.build_maps()
 
@@ -349,28 +356,88 @@ class Assembly:
         for occurrence in self.assembly_data["rootAssembly"]["occurrences"]:
             self.occurrences[tuple(occurrence["path"])] = occurrence
 
+    def populate_missing_instance_fields(self) -> None:
+        """
+        Populate missing instance fields in the assembly data.
+
+        It seems that when parts are repeated, they are numbered with
+        <1>, <2>, <3> and all but <1> have most of their data missing.
+
+        This method goes through and fills in the missing data by looking
+        up the <1> instance in the list of instances in that assembly.
+        """
+        def copy_new_keys(source: dict, destination: dict) -> None:
+            for key, value in source.items():
+                if key not in destination:
+                    destination[key] = value
+            return destination
+
+        def fill_instances(instances):
+            for instance_to in instances:
+                match = re.search(r"(.*) <(\d+)>$", instance_to["name"])
+                if not match:
+                    continue
+                name = match.group(1)
+                number = int(match.group(2))
+                # We're assuming the first one has all the data and
+                # subsequent have the duplicate data omitted.
+                # TODO(RWS): What happens if there is a name collision?
+
+                for instance_from in instances:
+                    if instance_from["name"].startswith(name):
+                        match_inner = re.search(r"<(\d+)>$", instance_from["name"])
+                        if not match_inner:
+                            continue
+                        copy_new_keys(instance_from, instance_to)
+                        break
+
+        fill_instances(self.assembly_data["rootAssembly"]["instances"])
+        for subassembly in self.assembly_data["subAssemblies"]:
+            fill_instances(subassembly["instances"])
+
+        with open("assembly2.json", "w", encoding="utf-8") as stream:
+            json.dump(self.assembly_data, stream, indent=4)
+
     def walk_instances(
         self,
+        include_suppressed: bool = False,
         prefix: Optional[OccurrencePath] = None,
         instances: Optional[List[dict]] = None,
     ) -> Generator[Tuple[OccurrencePath, dict]]:
         """Walk through all instances in the assembly."""
         if prefix is None:
-            prefix = []
+            prefix = tuple()
         if instances is None:
             instances = self.assembly_data["rootAssembly"]["instances"]
-
         for instance in instances:
-            path = tuple(prefix) + (instance["id"],)
+            if not include_suppressed:
+                if instance["suppressed"]:
+                    continue
+            path = prefix + (instance["id"],)
             yield path, instance
-            if instance["type"] == "Assembly" and not instance["suppressed"]:
-                sub_assembly = self.find_subassembly(instance)
-                yield from self.walk_instances(path, sub_assembly["instances"])
+            if instance["type"] == "Assembly":
+                try:
+                    sub_assembly = self.find_subassembly(instance)
+                except ValueError:
+                    # Suppressed assemblies may not be included in the
+                    # assembly data, so we just skip them.
+                    if instance["suppressed"]:
+                        continue
+                    raise
+                yield from self.walk_instances(
+                    include_suppressed, path, sub_assembly["instances"]
+                )
 
     def build_instances_map(self):
         """Update occurrences so they include instance data."""
-        for path, instance in self.walk_instances():
-            self.get_occurrence(path)["instance"] = instance
+        for path, instance in self.walk_instances(include_suppressed=True):
+            try:
+                self.get_occurrence(path)["instance"] = instance
+            except KeyError:
+                # Some instances are not occurrences so we just ignore them.
+                # This seems to be thinks like bolts.
+                # TODO(RWS): Figure out what's going and handle or document.
+                pass
 
     def load_features(self):
         """
@@ -435,24 +502,13 @@ class Assembly:
                     self.expression_parser.eval_expr(variable["value"])
                 )
 
-    def get_occurrence_full_path(self, last: str) -> tuple:
-        for key in self.occurrences.keys():
-            if key[-1] == last:
-                # print(f'Found full path for occurrence: {key}')
-                return key
-
-    def get_occurrence(self, path: list):
+    def get_occurrence(self, path: OccurrencePath) -> dict:
         """
         Retrieve occurrence from its path
         """
-        try:
-            return self.occurrences[tuple(path)]
-        except KeyError:
-            # TODO(RWS): This is bad because it's not unique, fix it.
-            path = self.get_occurrence_full_path(path[-1])
-            return self.occurrences[tuple(path)]
+        return self.occurrences[path]
 
-    def get_occurrence_transform(self, path: list) -> np.ndarray:
+    def get_occurrence_transform(self, path: OccurrencePath) -> np.ndarray:
         """
         Retrieve occurrence transform from its path
         """
@@ -499,10 +555,10 @@ class Assembly:
         body2_id = self.instance_body[occurrence_B]
         if body1_id > body2_id:
             body1_id, body2_id = body2_id, body1_id
-        print(
-            f"Merging bodies ({body1_id} <> {body2_id}): "
-            f"`{occurrence_A}` and `{occurrence_B}`"
-        )
+        # print(
+        #     f"Merging bodies ({body1_id} <> {body2_id}): "
+        #     f"`{occurrence_A}` and `{occurrence_B}`"
+        # )
 
         for occurrence in self.instance_body:
             if self.instance_body[occurrence] == body2_id:
@@ -531,9 +587,7 @@ class Assembly:
                 return subassembly
         raise ValueError(f"Subassembly not found: d/{did}/m/{mid}/e/{eid}")
 
-    def get_first_part_instance(
-        self, prefix=[], instances: Optional[dict] = None
-    ) -> dict:
+    def get_first_part_instance(self) -> dict:
         """Find the first part instance in the assembly.
 
         The part can then be used to create the root body.
@@ -556,13 +610,13 @@ class Assembly:
             )
 
     @staticmethod
-    def process_joint_name_and_set_inverted(data: dict) -> str:
+    def process_joint_name_and_check_if_inverted(data: dict) -> str:
         """Extract joint name from mate name and set inverted property."""
         parts = data["name"].split("_")
         del parts[0]
-        data["inverted"] = False
+        inverted = False
         if parts[-1] == "inv" or parts[-1] == "inverted":
-            data["inverted"] = True
+            inverted = True
             del parts[-1]
         name = "_".join(parts)
 
@@ -570,7 +624,7 @@ class Assembly:
             raise RuntimeError(
                 f"ERROR: the following dof should have a name {data['name']}"
             )
-        return name
+        return name, inverted
 
     def process_joint_type_and_limits(
         self, data: dict
@@ -602,6 +656,56 @@ class Assembly:
             )
         return joint_type, limits
 
+    def merge_fixed_bodies(self) -> None:
+        """
+        Merge bodies that are rigidly connected to each other.
+        """
+        for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
+            if data["name"].startswith("fix_") or (
+                data["mateType"] == "FASTENED"
+                and not data["name"].startswith("dof_")
+                and not data["name"].startswith("closing_")
+                and not data["name"].startswith("frame_")
+            ):
+                self.merge_bodies(occurrence_A, occurrence_B)
+
+    def process_frames(self) -> None:
+        """Find all the frames.
+
+        Locate each frame defined in the assembly and add to self.frames.
+        Also merges the body of the frame part with its parent if
+        draw_frames is enabled, otherwise sets the frame instance to be
+        ignored.
+        """
+        for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
+            if data["name"].startswith("frame_"):
+                name = "_".join(data["name"].split("_")[1:])
+                if (
+                    occurrence_A not in self.instance_body
+                    and occurrence_B in self.instance_body
+                ):
+                    parent, child = occurrence_B, occurrence_A
+                    mated_entity = data["matedEntities"][0]
+                elif (
+                    occurrence_B not in self.instance_body
+                    and occurrence_A in self.instance_body
+                ):
+                    parent, child = occurrence_A, occurrence_B
+                    mated_entity = data["matedEntities"][1]
+                else:
+                    raise RuntimeError(
+                        f"Frame {name} should mate an orphan body to a body in the kinematics tree"
+                    )
+
+                T_world_part = self.get_occurrence_transform(child)
+
+                self.frames += [Frame(self.instance_body[parent], name, T_world_part)]
+
+                if self.config.draw_frames:
+                    self.merge_bodies(parent, child)
+                else:
+                    self.instance_body[child] = INSTANCE_IGNORE
+
     def process_mates(self):
         """
         Pre-assign all non-assembly instances to a separate body id
@@ -624,25 +728,18 @@ class Assembly:
             print(f"occurrence_A: {occurrence_A}, occurrence_B: {occurrence_B}")
 
             if data["name"].startswith("dof_"):
-                name = Assembly.process_joint_name_and_set_inverted(data)
+                name, inverted = Assembly.process_joint_name_and_check_if_inverted(data)
                 joint_type, limits = self.process_joint_type_and_limits(data)
 
                 # We compute the axis in the world frame
                 mated_entity = data["matedEntities"][0]
-                T_world_part = self.get_occurrence_transform(
-                    mated_entity["matedOccurrence"]
-                )
+                T_world_part = self.get_occurrence_transform(occurrence_A)
 
                 # jointToPart is the (rotation only) matrix from joint to the part
                 # it is attached to
                 T_part_mate = self.get_mate_transform(mated_entity)
 
                 T_world_mate = T_world_part @ T_part_mate
-
-                limits_str = ""
-                if limits is not None:
-                    limits_str = f"[{round(limits[0], 3)}: {round(limits[1], 3)}]"
-                print(success(f"+ Found DOF: {name} ({joint_type}) {limits_str}"))
 
                 # Ensure occurrences are body
                 if occurrence_A not in self.instance_body:
@@ -658,73 +755,34 @@ class Assembly:
                     T_world_mate,
                     limits,
                 )
-
-                if data["inverted"]:
+                if inverted:
                     dof.flip()
 
                 self.dofs.append(dof)
 
-        # Merging fixed links
-        for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
-            if data["name"].startswith("fix_") or (
-                data["mateType"] == "FASTENED"
-                and not data["name"].startswith("dof_")
-                and not data["name"].startswith("closing_")
-                and not data["name"].startswith("frame_")
-            ):
-                self.merge_bodies(occurrence_A, occurrence_B)
-
-        # Processing frame mates
-        for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
-            if data["name"].startswith("frame_"):
-                name = "_".join(data["name"].split("_")[1:])
-                if (
-                    occurrence_A not in self.instance_body
-                    and occurrence_B in self.instance_body
-                ):
-                    parent, child = occurrence_B, occurrence_A
-                    mated_entity = data["matedEntities"][0]
-                elif (
-                    occurrence_B not in self.instance_body
-                    and occurrence_A in self.instance_body
-                ):
-                    parent, child = occurrence_A, occurrence_B
-                    mated_entity = data["matedEntities"][1]
-                else:
-                    raise Exception(
-                        f"Frame {name} should mate an orphan body to a body in the kinematics tree"
-                    )
-
-                T_world_part = self.get_occurrence_transform(
-                    mated_entity["matedOccurrence"]
-                )
-
-                self.frames.append(
-                    Frame(self.instance_body[parent], name, T_world_part)
-                )
-
-                if self.config.draw_frames:
-                    self.merge_bodies(parent, child)
-                else:
-                    self.instance_body[child] = INSTANCE_IGNORE
+        self.merge_fixed_bodies()
+        self.process_frames()
 
         # Checking that all instances are assigned to a body
-        # TODO(RWS): This needs to check all parts, not just top-level instances.
-        for instance in self.assembly_data["rootAssembly"]["instances"]:
+
+        for path, occurrence in self.occurrences.items():
             # In some cases, instances only have name and id, so suppress them
+            instance = occurrence["instance"]
             if "suppressed" not in instance:
                 print(f"? Skipping an instance without suppressed: {instance}")
                 continue
-            if (
-                self.get_occurrence_full_path(instance["id"]) not in self.instance_body
-                and not instance["suppressed"]
-            ):
-                if instance["type"] == "Assembly":
-                    print(f"Skipping assembly instance: {instance['name']}")
-                    continue
-                print(bright(f"Unassigned body: {instance}"))
-                print(self.instance_body)
-                self.make_body(self.get_occurrence_full_path(instance["id"]))
+            if instance["suppressed"]:
+                continue
+            if instance["type"] == "Assembly":
+                continue
+
+            if path not in self.instance_body:
+                print(
+                    f"ERROR: Instance {path} of type {instance['type']} is not assigned to a body"
+                )
+                print(f"  instance: {instance}")
+                print(f"  occurrence: {occurrence}")
+                self.make_body(path)
 
         # Processing loop closing frames
         for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
@@ -733,6 +791,7 @@ class Assembly:
             if data["name"].startswith("closing_"):
                 for k in 0, 1:
                     mated_entity = data["matedEntities"][k]
+                    # TODO(RWS): This probably won't work for subassemblies.
                     occurrence = mated_entity["matedOccurrence"][0]
 
                     T_world_part = self.get_occurrence_transform(
@@ -787,16 +846,16 @@ class Assembly:
                 "name"
             ].startswith("link_"):
                 link_name = "_".join(feature["featureData"]["name"].split("_")[1:])
-                body_id = self.instance_body[feature["featureData"]["occurrence"][0]]
+                body_id = self.instance_body[tuple(feature["featureData"]["occurrence"])]
                 self.link_names[body_id] = link_name
 
             if feature["featureType"] == "mateConnector" and feature["featureData"][
                 "name"
             ].startswith("frame_"):
                 name = "_".join(feature["featureData"]["name"].split("_")[1:])
-                occurrence = feature["featureData"]["occurrence"]
+                occurrence = tuple(feature["featureData"]["occurrence"])
                 T_world_occurrence = self.get_occurrence_transform(occurrence)
-                body_id = self.instance_body[occurrence[0]]
+                body_id = self.instance_body[occurrence]
                 T_occurrence_mate = self.cs_to_transformation(
                     feature["featureData"]["mateConnectorCS"]
                 )
@@ -891,9 +950,18 @@ class Assembly:
         # so we need to convert them to full paths with respect to the root
         # assembly.
 
+        # TODO(RWS): Use a better pattern to walk occurrences.
         for path, occurrence in self.occurrences.items():
             if occurrence["instance"]["type"] == "Assembly":
-                subassembly = self.find_subassembly(occurrence["instance"])
+                try:
+                    subassembly = self.find_subassembly(occurrence["instance"])
+                except ValueError:
+                    # Suppressed assemblies may not be included in the
+                    # assembly data, so we just skip them.
+                    # TODO(RWS): Add a unit test.
+                    if occurrence["instance"]["suppressed"]:
+                        continue
+                    raise
                 for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
                     subassembly["features"]
                 ):
@@ -1076,28 +1144,19 @@ class Assembly:
         Get the (first) instance associated with a given body
         """
         print(f"body_instance {body_id}")
-        for k, v in self.instance_body.items():
-            if v == 1:
-                print(k)
-        for instance in self.assembly_data["rootAssembly"]["instances"]:
-            instance_path = self.get_occurrence_full_path(instance["id"])
-            if (
-                instance_path in self.instance_body
-                and self.instance_body[instance_path] == body_id
-            ):
-                print("Returning instance from root assembly.")
-                return instance
-        for subassembly in self.assembly_data["subAssemblies"]:
-            for instance in subassembly["instances"]:
-                instance_path = self.get_occurrence_full_path(instance["id"])
-                # print(instance["id"])
-                # print(instance_path)
-                if (
-                    instance_path in self.instance_body
-                    and self.instance_body[instance_path] == body_id
-                ):
-                    print("Returning instance from subassembly.")
+        for path, instance in self.walk_instances():
+            if instance["type"] == "Assembly":
+                continue
+
+            try:
+                if self.instance_body[path] == body_id:
+                    # print(f"Returning instance {path} from walk_instances.")
                     return instance
+            except KeyError:
+                # If it's not in the instance body map, it probably means
+                # it's suppressed or not a body.
+                raise
+
         print(f"Failed to find instance for body_id: {body_id}")
         # print(f"instance_body: {self.instance_body}")
         return None
