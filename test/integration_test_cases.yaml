@@ -1,344 +1,344 @@
-# - name: Box Assembly
-#   url: >-
-#     https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/w/0b8e3fa8af86a951e60907d3/e/a7f0ea20048ff27ddad7ad40
-#   expected: |
-#     <?xml version="1.0" ?>
-#     <!-- Generated using onshape-to-robot -->
-#     <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/w/0b8e3fa8af86a951e60907d3/e/a7f0ea20048ff27ddad7ad40 -->
-#     <robot name="mybot">
-#       <!-- Link base_link -->
-#       <link name="base_link">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#       </link>
-#       <!-- Link box_primitive -->
-#       <link name="box_primitive">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#         <!-- Part box_primitive -->
-#         <visual>
-#           <origin xyz="0 0 0" rpy="0 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#           <material name="box_primitive_material">
-#             <color rgba="0.615686 0.811765 0.929412 1.0"/>
-#           </material>
-#         </visual>
-#         <collision>
-#           <origin xyz="0 0 0" rpy="0 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#         </collision>
-#       </link>
-#       <!-- Joint from base_link to box_primitive -->
-#       <joint name="base_link_to_box_primitive" type="fixed">
-#         <origin xyz="0 0 0" rpy="0 -0 0"/>
-#         <parent link="base_link"/>
-#         <child link="box_primitive"/>
-#         <axis xyz="0 0 1"/>
-#         <limit effort="10" velocity="10"/>
-#       </joint>
-#     </robot>
-# - name: Revolute Joint Assembly
-#   url: >-
-#     https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/w/0b8e3fa8af86a951e60907d3/e/db42659d74cffe12e368204b
-#   expected: |
-#     <?xml version="1.0" ?>
-#     <!-- Generated using onshape-to-robot -->
-#     <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/w/0b8e3fa8af86a951e60907d3/e/db42659d74cffe12e368204b -->
-#     <robot name="mybot">
-#       <!-- Link base_link -->
-#       <link name="base_link">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#       </link>
-#       <!-- Link box_primitive -->
-#       <link name="box_primitive">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#         <!-- Part box_primitive -->
-#         <visual>
-#           <origin xyz="0.0310707 0.0582629 0.0461109" rpy="3.14159 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#           <material name="box_primitive_material">
-#             <color rgba="0.615686 0.811765 0.929412 1.0"/>
-#           </material>
-#         </visual>
-#         <collision>
-#           <origin xyz="0.0310707 0.0582629 0.0461109" rpy="3.14159 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#         </collision>
-#       </link>
-#       <!-- Link box_primitive_2 -->
-#       <link name="box_primitive_2">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#         <!-- Part box_primitive_2 -->
-#         <visual>
-#           <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#           <material name="box_primitive_2_material">
-#             <color rgba="0.615686 0.811765 0.929412 1.0"/>
-#           </material>
-#         </visual>
-#         <collision>
-#           <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#         </collision>
-#       </link>
-#       <!-- Joint from box_primitive to box_primitive_2 -->
-#       <joint name="joint_1" type="revolute">
-#         <origin xyz="0.0493644 0.0338411 0.0207109" rpy="0 -0 0"/>
-#         <parent link="box_primitive"/>
-#         <child link="box_primitive_2"/>
-#         <axis xyz="0 0 1"/>
-#         <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
-#       </joint>
-#       <!-- Joint from base_link to box_primitive -->
-#       <joint name="base_link_to_box_primitive" type="fixed">
-#         <origin xyz="0 0 0" rpy="0 -0 0"/>
-#         <parent link="base_link"/>
-#         <child link="box_primitive"/>
-#         <axis xyz="0 0 1"/>
-#         <limit effort="10" velocity="10"/>
-#       </joint>
-#     </robot>
-# - name: Composite Assembly
-#   description: |
-#     An assembly that contains a joint in a subassembly.
-#   url: >-
-#     https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/w/0b8e3fa8af86a951e60907d3/e/e60313ad57a7864c6019f329
-#   expected: |
-#     <?xml version="1.0" ?>
-#     <!-- Generated using onshape-to-robot -->
-#     <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/w/0b8e3fa8af86a951e60907d3/e/e60313ad57a7864c6019f329 -->
-#     <robot name="mybot">
-#       <!-- Link base_link -->
-#       <link name="base_link">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#       </link>
-#       <!-- Link box_primitive -->
-#       <link name="box_primitive">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#         <!-- Part box_primitive -->
-#         <visual>
-#           <origin xyz="0 0.0488436 0.0508" rpy="3.14159 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#           <material name="box_primitive_material">
-#             <color rgba="0.615686 0.811765 0.929412 1.0"/>
-#           </material>
-#         </visual>
-#         <collision>
-#           <origin xyz="0 0.0488436 0.0508" rpy="3.14159 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#         </collision>
-#       </link>
-#       <!-- Frame box_bottom (dummy link + fixed joint) -->
-#       <link name="box_bottom">
-#         <origin xyz="0 0 0" rpy="0 -0 0"/>
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-9"/>
-#           <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-#         </inertial>
-#       </link>
-#       <joint name="box_bottom_frame" type="fixed">
-#         <origin xyz="0.0182936 0.0244218 0.0508" rpy="0 -0 0"/>
-#         <parent link="box_primitive"/>
-#         <child link="box_bottom"/>
-#         <axis xyz="0 0 0"/>
-#       </joint>
-#       <!-- Link box_primitive_2 -->
-#       <link name="box_primitive_2">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#         <!-- Part box_primitive_2 -->
-#         <visual>
-#           <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#           <material name="box_primitive_2_material">
-#             <color rgba="0.615686 0.811765 0.929412 1.0"/>
-#           </material>
-#         </visual>
-#         <collision>
-#           <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#         </collision>
-#       </link>
-#       <!-- Joint from box_primitive to box_primitive_2 -->
-#       <joint name="joint_1" type="revolute">
-#         <origin xyz="0.0182936 0.0244218 0.0254" rpy="0 -0 0"/>
-#         <parent link="box_primitive"/>
-#         <child link="box_primitive_2"/>
-#         <axis xyz="0 0 1"/>
-#         <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
-#       </joint>
-#       <!-- Joint from base_link to box_primitive -->
-#       <joint name="base_link_to_box_primitive" type="fixed">
-#         <origin xyz="0 0 0" rpy="0 -0 0"/>
-#         <parent link="base_link"/>
-#         <child link="box_primitive"/>
-#         <axis xyz="0 0 1"/>
-#         <limit effort="10" velocity="10"/>
-#       </joint>
-#     </robot>
-# - name: Composite Assembly x2
-#   description: |
-#     An assembly that contains a subassembly that contains a joint in a subassembly.
-#   url: >-
-#     https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/w/0b8e3fa8af86a951e60907d3/e/5c57bff532475bc3f46a79bb
-#   expected: |
-#     <?xml version="1.0" ?>
-#     <!-- Generated using onshape-to-robot -->
-#     <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/w/0b8e3fa8af86a951e60907d3/e/5c57bff532475bc3f46a79bb -->
-#     <robot name="mybot">
-#       <!-- Link base_link -->
-#       <link name="base_link">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#       </link>
-#       <!-- Link box_primitive -->
-#       <link name="box_primitive">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#         <!-- Part box_primitive -->
-#         <visual>
-#           <origin xyz="0 0.0488436 0.0508" rpy="3.14159 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#           <material name="box_primitive_material">
-#             <color rgba="0.615686 0.811765 0.929412 1.0"/>
-#           </material>
-#         </visual>
-#         <collision>
-#           <origin xyz="0 0.0488436 0.0508" rpy="3.14159 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#         </collision>
-#       </link>
-#       <!-- Frame box_top (dummy link + fixed joint) -->
-#       <link name="box_top">
-#         <origin xyz="0 0 0" rpy="0 -0 0"/>
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-9"/>
-#           <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-#         </inertial>
-#       </link>
-#       <joint name="box_top_frame" type="fixed">
-#         <origin xyz="0.0182936 0.0244218 0.0508" rpy="0 -0 0"/>
-#         <parent link="box_primitive"/>
-#         <child link="box_top"/>
-#         <axis xyz="0 0 0"/>
-#       </joint>
-#       <!-- Frame box_bottom (dummy link + fixed joint) -->
-#       <link name="box_bottom">
-#         <origin xyz="0 0 0" rpy="0 -0 0"/>
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-9"/>
-#           <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-#         </inertial>
-#       </link>
-#       <joint name="box_bottom_frame" type="fixed">
-#         <origin xyz="0.0182936 0.0244218 0.0508" rpy="0 -0 0"/>
-#         <parent link="box_primitive"/>
-#         <child link="box_bottom"/>
-#         <axis xyz="0 0 0"/>
-#       </joint>
-#       <!-- Link box_primitive_2 -->
-#       <link name="box_primitive_2">
-#         <inertial>
-#           <origin xyz="0 0 0" rpy="0 0 0"/>
-#           <mass value="1e-09"/>
-#           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-#         </inertial>
-#         <!-- Part box_primitive_2 -->
-#         <visual>
-#           <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#           <material name="box_primitive_2_material">
-#             <color rgba="0.615686 0.811765 0.929412 1.0"/>
-#           </material>
-#         </visual>
-#         <collision>
-#           <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
-#           <geometry>
-#             <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-#           </geometry>
-#         </collision>
-#       </link>
-#       <!-- Joint from box_primitive to box_primitive_2 -->
-#       <joint name="joint_1" type="revolute">
-#         <origin xyz="0.0182936 0.0244218 0.0254" rpy="0 -0 0"/>
-#         <parent link="box_primitive"/>
-#         <child link="box_primitive_2"/>
-#         <axis xyz="0 0 1"/>
-#         <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
-#       </joint>
-#       <!-- Joint from base_link to box_primitive -->
-#       <joint name="base_link_to_box_primitive" type="fixed">
-#         <origin xyz="0 0 0" rpy="0 -0 0"/>
-#         <parent link="base_link"/>
-#         <child link="box_primitive"/>
-#         <axis xyz="0 0 1"/>
-#         <limit effort="10" velocity="10"/>
-#       </joint>
-#     </robot>
+- name: Box Assembly
+  url: >-
+    https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/885eeed9f23c6ef38371a3d0/e/a7f0ea20048ff27ddad7ad40
+  expected: |
+    <?xml version="1.0" ?>
+    <!-- Generated using onshape-to-robot -->
+    <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/885eeed9f23c6ef38371a3d0/e/a7f0ea20048ff27ddad7ad40 -->
+    <robot name="mybot">
+      <!-- Link base_link -->
+      <link name="base_link">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+      </link>
+      <!-- Link box_primitive -->
+      <link name="box_primitive">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive -->
+        <visual>
+          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+          <material name="box_primitive_material">
+            <color rgba="0.615686 0.811765 0.929412 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Joint from base_link to box_primitive -->
+      <joint name="base_link_to_box_primitive" type="fixed">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <parent link="base_link"/>
+        <child link="box_primitive"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10"/>
+      </joint>
+    </robot>
+- name: Revolute Joint Assembly
+  url: >-
+    https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/885eeed9f23c6ef38371a3d0/e/db42659d74cffe12e368204b
+  expected: |
+    <?xml version="1.0" ?>
+    <!-- Generated using onshape-to-robot -->
+    <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/885eeed9f23c6ef38371a3d0/e/db42659d74cffe12e368204b -->
+    <robot name="mybot">
+      <!-- Link base_link -->
+      <link name="base_link">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+      </link>
+      <!-- Link box_primitive -->
+      <link name="box_primitive">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive -->
+        <visual>
+          <origin xyz="0.0310707 0.00941935 -0.00468908" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+          <material name="box_primitive_material">
+            <color rgba="0.615686 0.811765 0.929412 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="0.0310707 0.00941935 -0.00468908" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Link box_primitive_2 -->
+      <link name="box_primitive_2">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive_2 -->
+        <visual>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+          <material name="box_primitive_2_material">
+            <color rgba="0.615686 0.811765 0.929412 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Joint from box_primitive to box_primitive_2 -->
+      <joint name="joint_1" type="revolute">
+        <origin xyz="0.0493644 0.0338411 0.0207109" rpy="3.14159 -0 0"/>
+        <parent link="box_primitive"/>
+        <child link="box_primitive_2"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+      </joint>
+      <!-- Joint from base_link to box_primitive -->
+      <joint name="base_link_to_box_primitive" type="fixed">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <parent link="base_link"/>
+        <child link="box_primitive"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10"/>
+      </joint>
+    </robot>
+- name: Composite Assembly
+  description: |
+    An assembly that contains a joint in a subassembly.
+  url: >-
+    https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/885eeed9f23c6ef38371a3d0/e/e60313ad57a7864c6019f329
+  expected: |
+    <?xml version="1.0" ?>
+    <!-- Generated using onshape-to-robot -->
+    <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/885eeed9f23c6ef38371a3d0/e/e60313ad57a7864c6019f329 -->
+    <robot name="mybot">
+      <!-- Link base_link -->
+      <link name="base_link">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+      </link>
+      <!-- Link box_primitive -->
+      <link name="box_primitive">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive -->
+        <visual>
+          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+          <material name="box_primitive_material">
+            <color rgba="0.615686 0.811765 0.929412 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Link box_primitive_2 -->
+      <link name="box_primitive_2">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive_2 -->
+        <visual>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+          <material name="box_primitive_2_material">
+            <color rgba="0.615686 0.811765 0.929412 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Frame box_bottom (dummy link + fixed joint) -->
+      <link name="box_bottom">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-9"/>
+          <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
+      </link>
+      <joint name="box_bottom_frame" type="fixed">
+        <origin xyz="3.46945e-18 0 -0.0254" rpy="3.14159 -0 0"/>
+        <parent link="box_primitive_2"/>
+        <child link="box_bottom"/>
+        <axis xyz="0 0 0"/>
+      </joint>
+      <!-- Joint from box_primitive to box_primitive_2 -->
+      <joint name="joint_1" type="revolute">
+        <origin xyz="0.0182936 0.0244218 0.0254" rpy="3.14159 -0 0"/>
+        <parent link="box_primitive"/>
+        <child link="box_primitive_2"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+      </joint>
+      <!-- Joint from base_link to box_primitive -->
+      <joint name="base_link_to_box_primitive" type="fixed">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <parent link="base_link"/>
+        <child link="box_primitive"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10"/>
+      </joint>
+    </robot>
+- name: Composite Assembly x2
+  description: |
+    An assembly that contains a subassembly that contains a joint in a subassembly.
+  url: >-
+    https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/885eeed9f23c6ef38371a3d0/e/5c57bff532475bc3f46a79bb
+  expected: |
+    <?xml version="1.0" ?>
+    <!-- Generated using onshape-to-robot -->
+    <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/885eeed9f23c6ef38371a3d0/e/5c57bff532475bc3f46a79bb -->
+    <robot name="mybot">
+      <!-- Link base_link -->
+      <link name="base_link">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+      </link>
+      <!-- Link box_primitive -->
+      <link name="box_primitive">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive -->
+        <visual>
+          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+          <material name="box_primitive_material">
+            <color rgba="0.615686 0.811765 0.929412 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Link box_primitive_2 -->
+      <link name="box_primitive_2">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive_2 -->
+        <visual>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+          <material name="box_primitive_2_material">
+            <color rgba="0.615686 0.811765 0.929412 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Frame box_top (dummy link + fixed joint) -->
+      <link name="box_top">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-9"/>
+          <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
+      </link>
+      <joint name="box_top_frame" type="fixed">
+        <origin xyz="0 0 -0.0254" rpy="3.14159 -0 0"/>
+        <parent link="box_primitive_2"/>
+        <child link="box_top"/>
+        <axis xyz="0 0 0"/>
+      </joint>
+      <!-- Frame box_bottom (dummy link + fixed joint) -->
+      <link name="box_bottom">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-9"/>
+          <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
+      </link>
+      <joint name="box_bottom_frame" type="fixed">
+        <origin xyz="3.46945e-18 0 -0.0254" rpy="3.14159 -0 0"/>
+        <parent link="box_primitive_2"/>
+        <child link="box_bottom"/>
+        <axis xyz="0 0 0"/>
+      </joint>
+      <!-- Joint from box_primitive to box_primitive_2 -->
+      <joint name="joint_1" type="revolute">
+        <origin xyz="0.0182936 0.0244218 0.0254" rpy="3.14159 -0 0"/>
+        <parent link="box_primitive"/>
+        <child link="box_primitive_2"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+      </joint>
+      <!-- Joint from base_link to box_primitive -->
+      <joint name="base_link_to_box_primitive" type="fixed">
+        <origin xyz="0 0 0" rpy="0 -0 0"/>
+        <parent link="base_link"/>
+        <child link="box_primitive"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10"/>
+      </joint>
+    </robot>
 - name: ALL Caps Variable
   description: |
     An assembly that contains a variable that is all caps.
@@ -366,37 +366,53 @@
         </inertial>
         <!-- Part box_primitive -->
         <visual>
-          <origin xyz="-0.0182936 -0.0244218 -0.127" rpy="4.22664e-17 -7.24429e-18 1.7582e-17"/>
+          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="3.01903e-18 -7.24429e-18 1.7582e-17"/>
           <geometry>
-            <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
           </geometry>
           <material name="box_primitive_material">
             <color rgba="0.615686 0.811765 0.929412 1.0"/>
           </material>
         </visual>
         <collision>
-          <origin xyz="-0.0182936 -0.0244218 -0.127" rpy="4.22664e-17 -7.24429e-18 1.7582e-17"/>
-          <geometry>
-            <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
-          </geometry>
-        </collision>
-        <!-- Part box_primitive_2 -->
-        <visual>
           <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="3.01903e-18 -7.24429e-18 1.7582e-17"/>
           <geometry>
-            <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Link box_primitive_2 -->
+      <link name="box_primitive_2">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="1e-09"/>
+          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+        </inertial>
+        <!-- Part box_primitive_2 -->
+        <visual>
+          <origin xyz="-0.0182936 0.0244218 0" rpy="3.14159 1.80101e-33 -1.20913e-32"/>
+          <geometry>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
           </geometry>
           <material name="box_primitive_2_material">
             <color rgba="0.615686 0.811765 0.929412 1.0"/>
           </material>
         </visual>
         <collision>
-          <origin xyz="-0.0182936 -0.0244218 -0.0254" rpy="3.01903e-18 -7.24429e-18 1.7582e-17"/>
+          <origin xyz="-0.0182936 0.0244218 0" rpy="3.14159 1.80101e-33 -1.20913e-32"/>
           <geometry>
-            <mesh filename="package://mybot_description/assets/box_primitive.stl"/>
+            <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
           </geometry>
         </collision>
       </link>
+      <!-- Joint from box_primitive to box_primitive_2 -->
+      <joint name="slider" type="prismatic">
+        <origin xyz="0.0389382 6.93889e-18 0.0056388" rpy="-1.13408e-16 -2.17329e-17 5.2746e-17"/>
+        <parent link="box_primitive"/>
+        <child link="box_primitive_2"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10" velocity="10" lower="-1" upper="1"/>
+      </joint>
       <!-- Joint from base_link to box_primitive -->
       <joint name="base_link_to_box_primitive" type="fixed">
         <origin xyz="0 0 0" rpy="0 -0 0"/>
