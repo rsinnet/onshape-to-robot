@@ -175,7 +175,7 @@ class Assembly:
     def build_maps(self) -> None:
         """Build maps useful for processing the assembly."""
         self.build_occurrences_map()
-        self.find_instances()
+        self.build_instances_map()
         self.load_configuration()
 
     def load(self) -> None:
@@ -349,36 +349,28 @@ class Assembly:
         for occurrence in self.assembly_data["rootAssembly"]["occurrences"]:
             self.occurrences[tuple(occurrence["path"])] = occurrence
 
-    def find_instances(self, prefix: Optional[List[str]] = None, instances=None):
-        """
-        Walking all the instances and associating them with their occurrences.
-        """
+    def walk_instances(
+        self,
+        prefix: Optional[OccurrencePath] = None,
+        instances: Optional[List[dict]] = None,
+    ) -> Generator[Tuple[OccurrencePath, dict]]:
+        """Walk through all instances in the assembly."""
         if prefix is None:
             prefix = []
         if instances is None:
             instances = self.assembly_data["rootAssembly"]["instances"]
 
         for instance in instances:
-            if "type" in instance:
-                path = prefix + [instance["id"]]
-                self.get_occurrence(path)["instance"] = instance
-                print(bright(f"* Found instance: {instance}"))
-                if instance["type"] == "Assembly":
-                    if not instance["suppressed"]:
-                        d = instance["documentId"]
-                        m = instance["documentMicroversion"]
-                        e = instance["elementId"]
-                        c = instance["configuration"]
-                        for sub_assembly in self.assembly_data["subAssemblies"]:
-                            if (
-                                sub_assembly["documentId"] == d
-                                and sub_assembly["documentMicroversion"] == m
-                                and sub_assembly["elementId"] == e
-                                and sub_assembly["configuration"] == c
-                            ):
-                                self.find_instances(
-                                    prefix + [instance["id"]], sub_assembly["instances"]
-                                )
+            path = tuple(prefix) + (instance["id"],)
+            yield path, instance
+            if instance["type"] == "Assembly" and not instance["suppressed"]:
+                sub_assembly = self.find_subassembly(instance)
+                yield from self.walk_instances(path, sub_assembly["instances"])
+
+    def build_instances_map(self):
+        """Update occurrences so they include instance data."""
+        for path, instance in self.walk_instances():
+            self.get_occurrence(path)["instance"] = instance
 
     def load_features(self):
         """
@@ -487,14 +479,12 @@ class Assembly:
     def get_mate_transform(self, mated_entity: dict):
         return self.cs_to_transformation(mated_entity["matedCS"])
 
-    def make_body(self, id: str):
+    def make_body(self, path: OccurrencePath) -> None:
         """
-        Make the given instance id a body
+        Make the given occurrence a body.
         """
-        if isinstance(id, str):
-            print(warning("Deprecated usage of make_body()"))
-            id = self.get_occurrence_full_path(id)
-        self.instance_body[id] = self.current_body_id
+
+        self.instance_body[path] = self.current_body_id
         self.current_body_id += 1
 
     def merge_bodies(self, occurrence_A: str, occurrence_B: str):
@@ -541,39 +531,51 @@ class Assembly:
                 return subassembly
         raise ValueError(f"Subassembly not found: d/{did}/m/{mid}/e/{eid}")
 
-    def find_first_part(self, first_inst, depth: int = 1):
-        if first_inst["type"] != "Assembly":
-            return first_inst
+    def get_first_part_instance(
+        self, prefix=[], instances: Optional[dict] = None
+    ) -> dict:
+        """Find the first part instance in the assembly.
 
-        subassembly = self.find_subassembly(first_inst)
-        first_sub_inst = subassembly["instances"][0]
-        if first_sub_inst["type"] == "Assembly":
-            return self.find_first_part(first_sub_inst, depth + 1)
-        return first_sub_inst
+        The part can then be used to create the root body.
+        When designing in Onshape, it will be the first *part* in the
+        instances list.
+
+        Requires build_maps() to be called first.
+
+        """
+        for path, instance in self.walk_instances():
+            instance_type = instance["type"]
+            if instance_type == "Assembly":
+                continue
+            elif instance_type == "Part":
+                return self.get_occurrence(path)
+
+            # TODO(RWS): Handle other types of instances explicitly.
+            raise RuntimeError(
+                f"First non-assembly occurrence had type '{instance_type}'"
+            )
 
     def process_mates(self):
         """
-        Pre-assign all # top-level instances to a separate body id
+        Pre-assign all non-assembly instances to a separate body id
         """
         # NOTE(RWS): Originally, this function treated each top-level
-        # instance as a body, but now it treats every instance on every level
-        # as a body to enable mate relations to be processed at all levels.
+        # instance as a body, but now it treats each occurrence that
+        # is not an assembly as a body.
 
         # top_level_instances = self.assembly_data["rootAssembly"]["instances"]
         # self.make_body(top_level_instances[0]["id"])
 
-        # Find the first part instance (depth first), which may be in a subassembly.
-        first_inst = self.assembly_data["rootAssembly"]["instances"][0]
-        # TODO(RWS): It's possible that part is too narrow of a type here.
-        first_part = self.find_first_part(first_inst)
+        # Find the first part occurrence, which may be in a subassembly
+        # and create the first body, which will become the root body.
+        first_part = self.get_first_part_instance()
         print(bright(f"* Found first part: {first_part}"))
-        # Make the first body, which will be the root.
-        # TODO(RWS): This get full path has bugs, because IDs are shared when subassemblies are used multiple times.
-        self.make_body(self.get_occurrence_full_path(first_part["id"]))
+        self.make_body(tuple(first_part["path"]))
 
         # We first search for DOFs
         for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
             print(f"occurrence_A: {occurrence_A}, occurrence_B: {occurrence_B}")
+
             if data["name"].startswith("dof_"):
                 # Process the DOF name, removing dof prefix and inv suffix
                 parts = data["name"].split("_")
