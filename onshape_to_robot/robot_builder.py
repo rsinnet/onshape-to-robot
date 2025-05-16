@@ -14,7 +14,7 @@ from .csg import process as csg_process
 class RobotBuilder:
     def __init__(self, config: Config):
         self.config: Config = config
-        self.assembly: Assembly = Assembly(config)
+        self.assembly: Assembly = Assembly.from_config(config)
         self.robot: Robot = Robot(config.robot_name)
 
         for closure_type, frame1, frame2 in self.assembly.closures:

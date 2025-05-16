@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 import numpy as np
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 from .config import Config
 from .message import error, info, bright, success, warning
 from .onshape_api.client import Client
@@ -62,7 +62,7 @@ class DOF:
             raise Exception(f"ERROR: body {body_id} is not part of this DOF")
 
 
-def _feature_mating_two_occurrences(features):
+def _feature_mating_two_occurrences(features) -> Generator[Tuple[Dict, Tuple, Tuple]]:
     """
     Iterate over all valid mating feature with two occurrences
     """
@@ -94,8 +94,7 @@ class Assembly:
     def __init__(self, config: Config):
         self.config: Config = config
 
-        # Creating Onshape API client
-        self.client = Client(logging=False, creds=self.config.config_file)
+        self.client = None # use from_config() instead of __init__()
         self.expression_parser = ExpressionParser()
         self.expression_parser.variables_lazy_loading = self.load_variables
 
@@ -105,8 +104,8 @@ class Assembly:
 
         # All (raw) data from assembly
         self.assembly_data: dict = {}
-        # Map a (top-level) instance id to a body id
         self.current_body_id: int = 0
+        # Map an instance id to a body id
         self.instance_body: Dict[str, int] = {}
         # Frames object
         self.frames: List[Frame] = []
@@ -132,12 +131,29 @@ class Assembly:
         # Relation indexed by target joints, values are [source joint, ratio]
         self.relations: dict = {}
 
+        # Every instance in the root assembly and subassemblies
+        # is an occurrence in the root assembly
+        self.occurrences: dict = {}
+
+    @classmethod
+    def from_config(cls, config: Config) -> Assembly:
+        """Load an assembly from a Config."""
+        assembly = cls(config)
+        assembly.client = Client(logging=False, creds=assembly.config.config_file)
+        assembly.load()
+        return assembly
+
+    def load(self):
+        """Load the assembly."""
         self.ensure_workspace_or_version()
         self.find_assembly()
         self.check_configuration()
         self.retrieve_assembly()
+        self.find_occurrences()
         self.find_instances()
         self.load_features()
+        with open("features.json", "w") as stream:
+            json.dump(self.features, stream, indent=4)
         self.load_configuration()
         self.process_mates()
         self.build_trees()
@@ -283,13 +299,17 @@ class Assembly:
             configuration=self.config.configuration,
         )
 
-        with open("foo.json", "w") as stream:
+        with open("assembly.json", "w") as stream:
             json.dump(self.assembly_data, stream, indent=4)
 
         self.microversion_id: str = self.assembly_data["rootAssembly"][
             "documentMicroversion"
         ]
-        self.occurrences: dict = {}
+
+    def find_occurrences(self):
+        """
+        Find all occurrences in the root assembly.
+        """
         for occurrence in self.assembly_data["rootAssembly"]["occurrences"]:
             self.occurrences[tuple(occurrence["path"])] = occurrence
 
@@ -450,6 +470,10 @@ class Assembly:
         body2_id = self.instance_body[occurrence_B]
         if body1_id > body2_id:
             body1_id, body2_id = body2_id, body1_id
+        print(
+            f"Merging bodies ({body1_id} <> {body2_id}): "
+            f"`{occurrence_A}` and `{occurrence_B}`"
+        )
 
         for occurrence in self.instance_body:
             if self.instance_body[occurrence] == body2_id:
@@ -485,15 +509,21 @@ class Assembly:
 
     def process_mates(self):
         """
-        Pre-assign all top-level instances to a separate body id
+        Pre-assign all # top-level instances to a separate body id
         """
+        # NOTE(RWS): Originally, this function treated each top-level
+        # instance as a body, but now it treats every instance on every level
+        # as a body to enable mate relations to be processed at all levels.
+
         # top_level_instances = self.assembly_data["rootAssembly"]["instances"]
         # self.make_body(top_level_instances[0]["id"])
 
-        # Find the first part instance, which may be in a subassembly.
+        # Find the first part instance (depth first), which may be in a subassembly.
         first_inst = self.assembly_data["rootAssembly"]["instances"][0]
+        # TODO(RWS): It's possible that part is too narrow of a type here.
         first_part = self.find_first_part(first_inst)
         print(bright(f"* Found first part: {first_part}"))
+        # Make the first body, which will be the root.
         self.make_body(self.get_occurrence_full_path(first_part["id"]))
 
         # We first search for DOFs
@@ -624,6 +654,10 @@ class Assembly:
         # Checking that all instances are assigned to a body
         # TODO(RWS): This needs to check all parts, not just top-level instances.
         for instance in self.assembly_data["rootAssembly"]["instances"]:
+            # In some cases, instances only have name and id, so suppress them
+            if "suppressed" not in instance:
+                print(f"? Skipping an instance without suppressed: {instance}")
+                continue
             if (
                 self.get_occurrence_full_path(instance["id"]) not in self.instance_body
                 and not instance["suppressed"]
@@ -719,22 +753,23 @@ class Assembly:
         Perform checks on the produced tree
         """
         self.body_in_tree = []
-        print(f"inst: {self.instance_body}")
         print(f"Inst bodies: {len(self.instance_body.values())}")
+        print(f"ib vals: {self.instance_body.values()}")
         for body_id in self.instance_body.values():
             if body_id != INSTANCE_IGNORE and body_id not in self.body_in_tree:
+                print(f"Build tree {body_id}")
                 self.build_tree(body_id)
-            else:
-                print(f"body_id: {body_id}")
+            # else:
+            #     print(f"body_id: {body_id}")
 
-        print(success(f"* Found {len(self.root_nodes)} root nodes:"))
+        print(success(f"* Found {len(self.root_nodes)} root nodes {self.root_nodes}:"))
         for root_node in self.root_nodes:
             body_instance = self.body_instance(root_node)
             print(success(f"  - {body_instance['name']}"))
 
     def build_tree(self, root_node: int):
         """
-        Building a tree starting a root_node
+        Building a tree starting at a root_node
         """
         print(f"Building tree for body_id: {root_node}")
 
@@ -746,6 +781,7 @@ class Assembly:
         dofs = self.dofs.copy()
         while len(exploring) > 0:
             current = exploring.pop()
+            print(f"Exploring {current}")
             self.body_in_tree.append(current)
 
             children = []
@@ -770,7 +806,7 @@ class Assembly:
                 elif child not in exploring:
                     exploring.append(child)
 
-    def feature_mating_two_occurrences(self):
+    def feature_mating_two_occurrences(self) -> Generator[Tuple[str, Tuple, Tuple]]:
         for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
             self.assembly_data["rootAssembly"]["features"]
         ):
@@ -956,22 +992,31 @@ class Assembly:
         """
         Get the (first) instance associated with a given body
         """
+        print(f"body_instance {body_id}")
+        for k, v in self.instance_body.items():
+            if v == 1:
+                print(k)
         for instance in self.assembly_data["rootAssembly"]["instances"]:
             instance_path = self.get_occurrence_full_path(instance["id"])
             if (
                 instance_path in self.instance_body
                 and self.instance_body[instance_path] == body_id
             ):
+                print("Returning instance from root assembly.")
                 return instance
         for subassembly in self.assembly_data["subAssemblies"]:
             for instance in subassembly["instances"]:
                 instance_path = self.get_occurrence_full_path(instance["id"])
+                # print(instance["id"])
+                # print(instance_path)
                 if (
                     instance_path in self.instance_body
                     and self.instance_body[instance_path] == body_id
                 ):
+                    print("Returning instance from subassembly.")
                     return instance
-
+        print(f"Failed to find instance for body_id: {body_id}")
+        # print(f"instance_body: {self.instance_body}")
         return None
 
     def body_occurrences(self, body_id: int):
