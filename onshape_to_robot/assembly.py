@@ -555,6 +555,53 @@ class Assembly:
                 f"First non-assembly occurrence had type '{instance_type}'"
             )
 
+    @staticmethod
+    def process_joint_name_and_set_inverted(data: dict) -> str:
+        """Extract joint name from mate name and set inverted property."""
+        parts = data["name"].split("_")
+        del parts[0]
+        data["inverted"] = False
+        if parts[-1] == "inv" or parts[-1] == "inverted":
+            data["inverted"] = True
+            del parts[-1]
+        name = "_".join(parts)
+
+        if name == "":
+            raise RuntimeError(
+                f"ERROR: the following dof should have a name {data['name']}"
+            )
+        return name
+
+    def process_joint_type_and_limits(
+        self, data: dict
+    ) -> Tuple[str, Optional[Tuple[float, float]]]:
+        """Extract joint type and limits from mate data."""
+        limits = None
+        if data["mateType"] == "REVOLUTE" or data["mateType"] == "CYLINDRICAL":
+            if "wheel" in data["name"] or "continuous" in data["name"]:
+                joint_type = Joint.CONTINUOUS
+            else:
+                joint_type = Joint.REVOLUTE
+
+            if not self.config.ignore_limits:
+                limits = self.get_limits(joint_type, data["name"])
+        elif data["mateType"] == "SLIDER":
+            joint_type = Joint.PRISMATIC
+            if not self.config.ignore_limits:
+                limits = self.get_limits(joint_type, data["name"])
+        elif data["mateType"] == "FASTENED":
+            joint_type = Joint.FIXED
+        elif data["mateType"] == "BALL":
+            joint_type = Joint.BALL
+            if not self.config.ignore_limits:
+                limits = self.get_limits(joint_type, data["name"])
+        else:
+            raise RuntimeError(
+                f"ERROR: {data['name']} is declared as a DOF but the mate type is {data['mateType']}\n"
+                + "       Only REVOLUTE, CYLINDRICAL, SLIDER and FASTENED are supported"
+            )
+        return joint_type, limits
+
     def process_mates(self):
         """
         Pre-assign all non-assembly instances to a separate body id
@@ -577,45 +624,8 @@ class Assembly:
             print(f"occurrence_A: {occurrence_A}, occurrence_B: {occurrence_B}")
 
             if data["name"].startswith("dof_"):
-                # Process the DOF name, removing dof prefix and inv suffix
-                parts = data["name"].split("_")
-                del parts[0]
-                data["inverted"] = False
-                if parts[-1] == "inv" or parts[-1] == "inverted":
-                    data["inverted"] = True
-                    del parts[-1]
-                name = "_".join(parts)
-
-                if name == "":
-                    raise Exception(
-                        f"ERROR: the following dof should have a name {data['name']}"
-                    )
-
-                # Finding joint type and limits
-                limits = None
-                if data["mateType"] == "REVOLUTE" or data["mateType"] == "CYLINDRICAL":
-                    if "wheel" in parts or "continuous" in parts:
-                        joint_type = Joint.CONTINUOUS
-                    else:
-                        joint_type = Joint.REVOLUTE
-
-                    if not self.config.ignore_limits:
-                        limits = self.get_limits(joint_type, data["name"])
-                elif data["mateType"] == "SLIDER":
-                    joint_type = Joint.PRISMATIC
-                    if not self.config.ignore_limits:
-                        limits = self.get_limits(joint_type, data["name"])
-                elif data["mateType"] == "FASTENED":
-                    joint_type = Joint.FIXED
-                elif data["mateType"] == "BALL":
-                    joint_type = Joint.BALL
-                    if not self.config.ignore_limits:
-                        limits = self.get_limits(joint_type, data["name"])
-                else:
-                    raise Exception(
-                        f"ERROR: {name} is declared as a DOF but the mate type is {data['mateType']}\n"
-                        + "       Only REVOLUTE, CYLINDRICAL, SLIDER and FASTENED are supported"
-                    )
+                name = Assembly.process_joint_name_and_set_inverted(data)
+                joint_type, limits = self.process_joint_type_and_limits(data)
 
                 # We compute the axis in the world frame
                 mated_entity = data["matedEntities"][0]
@@ -1007,7 +1017,7 @@ class Assembly:
                     print(warning(f"Unknown offset type for {name}"))
         return None
 
-    def get_limits(self, joint_type: str, name: str):
+    def get_limits(self, joint_type: str, name: str) -> Tuple[float, float]:
         """
         Retrieve (low, high) limits for a given joint, if any
         """
