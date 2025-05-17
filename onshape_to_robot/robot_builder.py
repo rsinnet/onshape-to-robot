@@ -268,9 +268,9 @@ class RobotBuilder:
                 )
                 return
             mass_properties = mass_properties["bodies"][instance["partId"]]
-            mass = mass_properties["mass"][0]
-            com = mass_properties["centroid"]
-            inertia = mass_properties["inertia"]
+            mass = mass_properties.get("mass", [0])[0]
+            com = mass_properties.get("centroid", [0]*3)
+            inertia = mass_properties.get("inertia", [0]*9)
 
             if abs(mass) < 1e-9:
                 print(
