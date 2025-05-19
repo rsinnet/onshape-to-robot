@@ -88,37 +88,24 @@ class DOF:
             raise Exception(f"ERROR: body {body_id} is not part of this DOF")
 
 
-def _feature_mating_two_occurrences(
-    features: dict,
-) -> Generator[Tuple[dict, OccurrencePath, OccurrencePath]]:
+def is_two_feature_mate(
+    feature: dict,
+) -> Optional[Tuple[dict, OccurrencePath, OccurrencePath]]:
     """
-    Iterate over all valid mating feature with two occurrences.
-
-    Note that the occurrence paths are relative to the assembly and
-    are therefore not full paths for any subassembly.
-
-    Returns:
-        The feature data and the two occurrence relative paths.
-
+    Check if the feature is a mate with two occurrences.
     """
-    for feature in features:
-        if feature["featureType"] == "mate" and not feature["suppressed"]:
-            data = feature["featureData"]
-
-            if (
-                "matedEntities" not in data
-                or len(data["matedEntities"]) != 2
-                or len(data["matedEntities"][0]["matedOccurrence"]) == 0
-                or len(data["matedEntities"][1]["matedOccurrence"]) == 0
-            ):
-                continue
-
-            # occurrence_A = data["matedEntities"][0]["matedOccurrence"][0]
-            # occurrence_B = data["matedEntities"][1]["matedOccurrence"][0]
-            occurrence_A = tuple(data["matedEntities"][0]["matedOccurrence"])
-            occurrence_B = tuple(data["matedEntities"][1]["matedOccurrence"])
-
-            yield data, occurrence_A, occurrence_B
+    if feature["featureType"] == "mate" and not feature["suppressed"]:
+        data = feature["featureData"]
+        if (
+            "matedEntities" not in data
+            or len(data["matedEntities"]) != 2
+            or len(data["matedEntities"][0]["matedOccurrence"]) == 0
+            or len(data["matedEntities"][1]["matedOccurrence"]) == 0
+        ):
+            return None
+        occurrence_A = tuple(data["matedEntities"][0]["matedOccurrence"])
+        occurrence_B = tuple(data["matedEntities"][1]["matedOccurrence"])
+        return data, occurrence_A, occurrence_B
 
 
 class Assembly:
@@ -669,6 +656,10 @@ class Assembly:
             ):
                 self.merge_bodies(occurrence_A, occurrence_B)
 
+        # Process mate groups.
+        # for data, occurrences
+        pass
+
     def process_frames(self) -> None:
         """Find all the frames.
 
@@ -725,7 +716,7 @@ class Assembly:
 
         # We first search for DOFs
         for data, occurrence_A, occurrence_B in self.feature_mating_two_occurrences():
-            print(f"occurrence_A: {occurrence_A}, occurrence_B: {occurrence_B}")
+            print(f"zzz occurrence_A: {occurrence_A}, occurrence_B: {occurrence_B}")
 
             if data["name"].startswith("dof_"):
                 name, inverted = Assembly.process_joint_name_and_check_if_inverted(data)
@@ -846,7 +837,9 @@ class Assembly:
                 "name"
             ].startswith("link_"):
                 link_name = "_".join(feature["featureData"]["name"].split("_")[1:])
-                body_id = self.instance_body[tuple(feature["featureData"]["occurrence"])]
+                body_id = self.instance_body[
+                    tuple(feature["featureData"]["occurrence"])
+                ]
                 self.link_names[body_id] = link_name
 
             if feature["featureType"] == "mateConnector" and feature["featureData"][
@@ -922,36 +915,18 @@ class Assembly:
                 elif child not in exploring:
                     exploring.append(child)
 
-    def feature_mating_two_occurrences(
-        self,
-    ) -> Generator[Tuple[str, OccurrencePath, OccurrencePath]]:
-        """
-        Return all features that mate two occurrences at any assembly level.
+    def walk_features(
+        self, include_suppressed=False
+    ) -> Generator[Tuple[OccurrencePath, dict]]:
+        path = tuple()
+        for feature in self.assembly_data["rootAssembly"]["features"]:
+            if not include_suppressed and feature["suppressed"]:
+                continue
+            yield path, feature
 
-        The returned occurrences are full paths, i.e., relative to the
-        root assembly even if the feature was found in a subassembly.
-        """
-
-        for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
-            self.assembly_data["rootAssembly"]["features"]
-        ):
-            yield data, occurrence_A, occurrence_B
-
-        # There is only one root assembly, but there can be multiple
-        # occurrences of a subassembly. This means looping through all
-        # subassemblies isn't quite correct because it only gives us one
-        # loop iteration per subassembly, but we want one per occurrence.
-
-        # To achieve this, we loop through every occurrence. For each
-        # occurrence that is an assembly, go through the features of that
-        # subassembly.
-
-        # In subassemblies, the occurrences are referred to by relative paths,
-        # so we need to convert them to full paths with respect to the root
-        # assembly.
-
-        # TODO(RWS): Use a better pattern to walk occurrences.
         for path, occurrence in self.occurrences.items():
+            if not include_suppressed and occurrence["instance"]["suppressed"]:
+                continue
             if occurrence["instance"]["type"] == "Assembly":
                 try:
                     subassembly = self.find_subassembly(occurrence["instance"])
@@ -962,13 +937,25 @@ class Assembly:
                     if occurrence["instance"]["suppressed"]:
                         continue
                     raise
-                for data, occurrence_A, occurrence_B in _feature_mating_two_occurrences(
-                    subassembly["features"]
-                ):
-                    # Convert relative paths to full paths
-                    occurrence_A = path + occurrence_A
-                    occurrence_B = path + occurrence_B
-                    yield data, occurrence_A, occurrence_B
+                for feature in subassembly["features"]:
+                    yield path, feature
+
+    def feature_mating_two_occurrences(
+        self,
+    ) -> Generator[Tuple[str, OccurrencePath, OccurrencePath]]:
+        """
+        Return all features that mate two occurrences at any assembly level.
+
+        The returned occurrences are full paths, i.e., relative to the
+        root assembly even if the feature was found in a subassembly.
+        """
+
+        for path, feature in self.walk_features():
+            result = is_two_feature_mate(feature)
+            if result is None:
+                continue
+            [data, occurrence_A, occurrence_B] = result
+            yield data, path + occurrence_A, path + occurrence_B
 
     def get_feature_by_id(self, feature_id: str):
         """
