@@ -7,9 +7,8 @@ Workflow overview
 In order to make your robot possible to export, you need to follow some conventions. The summary is as follows:
 
 * ``onshape-to-robot`` exports an **assembly** of the robot,
-* Be sure this assembly is a **top-level assembly**, where instances are robot links (they can be parts or sub-assemblies),
-* The **first instance** in the assembly list will be considered as the base link,
-* All the instances in the assembly will become links in the export
+* The **first part instance** in the instances list will be considered as the base link, which may be in the root assembly or a subassembly
+* All the parts in the assembly will become links in the export
 * **Mate connectors** should have special names (see below for details):
 
     * ``dof_name``: for degrees of freedom
@@ -28,7 +27,7 @@ Specifying degrees of freedom
 
 To create a degree of freedom, you should use the ``dof_`` prefix when placing a mate connector.
 
-* If the mate connector is **cylindrical** or **revolute**, a ``revolute`` joint will be issued 
+* If the mate connector is **cylindrical** or **revolute**, a ``revolute`` joint will be issued
 * If the mate connector is a **slider**, a ``prismatic`` joint will be issued
 * If the mate connector is **fastened**, a ``fixed`` joint will be issued
 
@@ -97,7 +96,7 @@ Fixed robot
 If you want to export a robot that is fixed to the ground, use the "Fixed" feture of Onshape:
 
 .. image:: _static/img/fixed.png
-    :align: center 
+    :align: center
     :class: padding
 
 Robot with multiple base links
