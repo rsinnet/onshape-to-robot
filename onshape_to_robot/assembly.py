@@ -656,9 +656,25 @@ class Assembly:
             ):
                 self.merge_bodies(occurrence_A, occurrence_B)
 
-        # Process mate groups.
-        # for data, occurrences
-        pass
+        self.merge_mate_group_bodies()
+
+    def merge_mate_group_bodies(self) -> None:
+        """Merge bodies that are part of the same mate group."""
+        for path, feature in self.walk_features():
+            if feature["featureType"] == "mateGroup":
+                data = feature["featureData"]
+                num_occurrences = len(data["occurrences"])
+                if num_occurrences < 2:
+                    print(
+                        warning(
+                            f"Mate group found with {num_occurrences} occurrence(s)."
+                        )
+                    )
+                    continue
+                parent = path + tuple(data["occurrences"][0]["occurrence"])
+                for occurrence in data["occurrences"]:
+                    child = path + tuple(occurrence["occurrence"])
+                    self.merge_bodies(parent, child)
 
     def process_frames(self) -> None:
         """Find all the frames.

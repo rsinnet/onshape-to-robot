@@ -1053,11 +1053,11 @@
   description: |
     An assembly with a mate group that contains a suppressed part.
   url: >-
-    https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/ffd1b4ff06d6c877a1f40de2/e/26053d64e0c7076878b0702e
+    https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/132b50fe38e15a3baa9b5b60/e/26053d64e0c7076878b0702e
   expected: |
     <?xml version="1.0" ?>
     <!-- Generated using onshape-to-robot -->
-    <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/ffd1b4ff06d6c877a1f40de2/e/26053d64e0c7076878b0702e -->
+    <!-- Onshape https://atomicmachines.onshape.com/documents/43aaee52dd90f8f1b794a9ae/v/132b50fe38e15a3baa9b5b60/e/26053d64e0c7076878b0702e -->
     <robot name="mybot">
       <!-- Link base_link -->
       <link name="base_link">
@@ -1067,8 +1067,8 @@
           <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
         </inertial>
       </link>
-      <!-- Link box_primitive -->
-      <link name="box_primitive">
+      <!-- Link my_link -->
+      <link name="my_link">
         <inertial>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <mass value="1e-09"/>
@@ -1090,22 +1090,6 @@
             <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
           </geometry>
         </collision>
-      </link>
-      <!-- Joint from base_link to box_primitive -->
-      <joint name="base_link_to_box_primitive" type="fixed">
-        <origin xyz="0 0 0" rpy="0 -0 0"/>
-        <parent link="base_link"/>
-        <child link="box_primitive"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10"/>
-      </joint>
-      <!-- Link box_primitive_2 -->
-      <link name="box_primitive_2">
-        <inertial>
-          <origin xyz="0 0 0" rpy="0 0 0"/>
-          <mass value="1e-09"/>
-          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-        </inertial>
         <!-- Part box_primitive_2 -->
         <visual>
           <origin xyz="-0.00532889 -0.0130488 -0.00686836" rpy="0 -0 0"/>
@@ -1122,22 +1106,6 @@
             <mesh filename="package://mybot_description/meshes/box_primitive.stl"/>
           </geometry>
         </collision>
-      </link>
-      <!-- Joint from base_link to box_primitive_2 -->
-      <joint name="base_link_to_box_primitive_2" type="fixed">
-        <origin xyz="0 0 0" rpy="0 -0 0"/>
-        <parent link="base_link"/>
-        <child link="box_primitive_2"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10"/>
-      </joint>
-      <!-- Link box_primitive_3 -->
-      <link name="box_primitive_3">
-        <inertial>
-          <origin xyz="0 0 0" rpy="0 0 0"/>
-          <mass value="1e-09"/>
-          <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-        </inertial>
         <!-- Part box_primitive_3 -->
         <visual>
           <origin xyz="0.0704325 0.0442177 0.0134201" rpy="0 -0 0"/>
@@ -1155,11 +1123,11 @@
           </geometry>
         </collision>
       </link>
-      <!-- Joint from base_link to box_primitive_3 -->
-      <joint name="base_link_to_box_primitive_3" type="fixed">
+      <!-- Joint from base_link to my_link -->
+      <joint name="base_link_to_my_link" type="fixed">
         <origin xyz="0 0 0" rpy="0 -0 0"/>
         <parent link="base_link"/>
-        <child link="box_primitive_3"/>
+        <child link="my_link"/>
         <axis xyz="0 0 1"/>
         <limit effort="10" velocity="10"/>
       </joint>
