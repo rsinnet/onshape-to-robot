@@ -890,7 +890,10 @@ class Assembly:
         print(success(f"* Found {len(self.root_nodes)} root nodes {self.root_nodes}:"))
         for root_node in self.root_nodes:
             body_instance = self.body_instance(root_node)
-            print(success(f"  - {body_instance['name']}"))
+            try:
+                print(success(f"  - {body_instance['name']}"))
+            except TypeError:
+                print(warning(f"Failed to get name for root node {root_node}"))
 
     def build_tree(self, root_node: int):
         """
@@ -1142,7 +1145,7 @@ class Assembly:
                 )
             return None
 
-    def body_instance(self, body_id: int):
+    def body_instance(self, body_id: int) -> Optional[dict]:
         """
         Get the (first) instance associated with a given body
         """
