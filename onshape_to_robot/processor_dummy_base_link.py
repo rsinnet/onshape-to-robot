@@ -23,6 +23,9 @@ class ProcessorDummyBaseLink(Processor):
             robot.links.append(new_base_link)
 
             for base_link in robot.base_links:
+                if base_link is None:
+                    print("Skipping missing base_link.")
+                    continue
                 robot.joints.append(
                     Joint(
                         "base_link_to_" + base_link.name,

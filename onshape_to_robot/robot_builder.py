@@ -355,6 +355,9 @@ class RobotBuilder:
         Add recursively body nodes to the robot description.
         """
         instance = self.assembly.body_instance(body_id)
+        if instance is None:
+            print(warning(f"Skipping missing instance {body_id}"))
+            return
 
         if body_id in self.assembly.link_names:
             link_name = self.assembly.link_names[body_id]
