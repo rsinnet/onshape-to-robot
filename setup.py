@@ -15,12 +15,12 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     entry_points={
         "console_scripts": [
-            "onshape-to-robot=onshape_to_robot:export.main",
-            "onshape-to-robot-bullet=onshape_to_robot:bullet.main",
-            "onshape-to-robot-mujoco=onshape_to_robot:mujoco.main",
-            "onshape-to-robot-clear-cache=onshape_to_robot:clear_cache.main",
-            "onshape-to-robot-edit-shape=onshape_to_robot:edit_shape.main",
-            "onshape-to-robot-pure-sketch=onshape_to_robot:pure_sketch.main",
+            "onshape-to-robot=onshape_to_robot.export:main",
+            "onshape-to-robot-bullet=onshape_to_robot.bullet:main",
+            "onshape-to-robot-mujoco=onshape_to_robot.mujoco:main",
+            "onshape-to-robot-clear-cache=onshape_to_robot.clear_cache:main",
+            "onshape-to-robot-edit-shape=onshape_to_robot.edit_shape:main",
+            "onshape-to-robot-pure-sketch=onshape_to_robot.pure_sketch:main",
         ]
     },
     classifiers=[
@@ -42,6 +42,14 @@ setuptools.setup(
         "pymeshlab": ["pymeshlab"],
     },
     include_package_data=True,
-    package_data={"": ["bullet/*", "assets/*", "README.md"]},
+    package_data={
+        "": [
+            "bullet/*",
+            "assets/*",
+            "ros_package.yaml",
+            "templates/*",
+            "README.md",
+        ]
+    },
     python_requires=">=3.9",
 )
