@@ -1,0 +1,13 @@
+services:
+  ros2:
+    image: ros2
+    build:
+      dockerfile: ros2.dockerfile
+    environment:
+      - DISPLAY=host.docker.internal:0.0
+      - ROBOT_PACKAGE=$ROBOT_PACKAGE
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - ./$ROBOT_PACKAGE:/workspace/src/$ROBOT_PACKAGE:ro
+      - ./otr_ros2_entrypoint.sh:/otr_ros2_entrypoint.sh:ro
+    entrypoint: ["/bin/bash", "-c", "/otr_ros2_entrypoint.sh"]
