@@ -4,6 +4,12 @@ project(pnp_robot_description)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 
+# Install config files
+install(DIRECTORY
+  config
+  DESTINATION share/${PROJECT_NAME}/
+)
+
 # Install launch files
 install(DIRECTORY
   launch
