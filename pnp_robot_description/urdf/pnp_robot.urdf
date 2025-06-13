@@ -1,0 +1,293 @@
+<?xml version="1.0"?>
+<robot name="pnp_robot">
+
+    <!-- Base Link (fixed to world) -->
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="0.3 0.3 0.1" />
+            </geometry>
+            <material name="gray">
+                <color rgba="0.5 0.5 0.5 1" />
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.3 0.3 0.1" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="2.0" />
+            <inertia ixx="0.02" iyy="0.02" izz="0.03" ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- Z-Axis Link (vertical motion) -->
+    <link name="z_link">
+        <visual>
+            <geometry>
+                <cylinder radius="0.05" length="0.2" />
+            </geometry>
+            <material name="blue">
+                <color rgba="0 0 1 1" />
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.05" length="0.2" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.5" />
+            <inertia ixx="0.002" iyy="0.002" izz="0.001" ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- X-Axis Link -->
+    <link name="x_link">
+        <visual>
+            <geometry>
+                <box size="0.2 0.05 0.05" />
+            </geometry>
+            <material name="red">
+                <color rgba="1 0 0 1" />
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.2 0.05 0.05" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.3" />
+            <inertia ixx="0.001" iyy="0.002" izz="0.002" ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- Y-Axis Link -->
+    <link name="y_link">
+        <visual>
+            <geometry>
+                <box size="0.05 0.2 0.05" />
+            </geometry>
+            <material name="green">
+                <color rgba="0 1 0 1" />
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.05 0.2 0.05" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.3" />
+            <inertia ixx="0.002" iyy="0.001" izz="0.002" ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- Theta Link (rotation about Z) -->
+    <link name="theta_link">
+        <visual>
+            <geometry>
+                <cylinder radius="0.08" length="0.05" />
+            </geometry>
+            <material name="yellow">
+                <color rgba="1 1 0 1" />
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.08" length="0.05" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.2" />
+            <inertia ixx="0.001" iyy="0.001" izz="0.001" ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- End Effector Link -->
+    <link name="end_effector">
+        <visual>
+            <geometry>
+                <sphere radius="0.03" />
+            </geometry>
+            <material name="orange">
+                <color rgba="1 0.5 0 1" />
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <sphere radius="0.03" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.0001" iyy="0.0001" izz="0.0001" ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- Camera Link -->
+    <link name="camera_link">
+        <visual>
+            <geometry>
+                <box size="0.04 0.06 0.03" />
+            </geometry>
+            <material name="black">
+                <color rgba="0.1 0.1 0.1 1" />
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.04 0.06 0.03" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.05" />
+            <inertia ixx="0.00005" iyy="0.00004" izz="0.00006" ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- Camera Optical Frame (for sensor data) -->
+    <link name="camera_optical_frame">
+    </link>
+
+    <!-- Z-Axis Joint (prismatic, vertical motion) -->
+    <joint name="z_joint" type="prismatic">
+        <parent link="base_link" />
+        <child link="z_link" />
+        <origin xyz="0 0 0.05" rpy="0 0 0" />
+        <axis xyz="0 0 1" />
+        <limit lower="0" upper="1.0" effort="100" velocity="1.0" />
+    </joint>
+
+    <!-- X-Axis Joint (prismatic, horizontal motion) -->
+    <joint name="x_joint" type="prismatic">
+        <parent link="z_link" />
+        <child link="x_link" />
+        <origin xyz="0 0 0.1" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
+        <limit lower="-0.5" upper="0.5" effort="100" velocity="1.0" />
+    </joint>
+
+    <!-- Y-Axis Joint (prismatic, horizontal motion) -->
+    <joint name="y_joint" type="prismatic">
+        <parent link="x_link" />
+        <child link="y_link" />
+        <origin xyz="0.1 0 0" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <limit lower="-0.5" upper="0.5" effort="100" velocity="1.0" />
+    </joint>
+
+    <!-- Theta Joint (revolute, rotation about Z) -->
+    <joint name="theta_joint" type="revolute">
+        <parent link="y_link" />
+        <child link="theta_link" />
+        <origin xyz="0 0.1 0" rpy="0 0 0" />
+        <axis xyz="0 0 1" />
+        <limit lower="-3.14159" upper="3.14159" effort="50" velocity="2.0" />
+    </joint>
+
+    <!-- End Effector Joint (fixed) -->
+    <joint name="ee_joint" type="fixed">
+        <parent link="theta_link" />
+        <child link="end_effector" />
+        <origin xyz="0 0 0.025" rpy="0 0 0" />
+    </joint>
+
+    <!-- Camera Joint (fixed to end effector) -->
+    <joint name="camera_joint" type="fixed">
+        <parent link="end_effector" />
+        <child link="camera_link" />
+        <origin xyz="0.05 0 0" rpy="0 0 0" />
+    </joint>
+
+    <!-- Camera Optical Joint (standard camera frame convention) -->
+    <joint name="camera_optical_joint" type="fixed">
+        <parent link="camera_link" />
+        <child link="camera_optical_frame" />
+        <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708" />
+    </joint>
+
+    <!-- Gazebo-specific configurations -->
+    <gazebo reference="base_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
+    <gazebo reference="z_link">
+        <material>Gazebo/Blue</material>
+    </gazebo>
+
+    <gazebo reference="x_link">
+        <material>Gazebo/Red</material>
+    </gazebo>
+
+    <gazebo reference="y_link">
+        <material>Gazebo/Green</material>
+    </gazebo>
+
+    <gazebo reference="theta_link">
+        <material>Gazebo/Yellow</material>
+    </gazebo>
+
+    <gazebo reference="end_effector">
+        <material>Gazebo/Orange</material>
+    </gazebo>
+
+    <gazebo reference="camera_link">
+        <material>Gazebo/Black</material>
+    </gazebo>
+
+    <!-- Camera sensor plugin -->
+    <gazebo reference="camera_link">
+        <sensor type="camera" name="camera">
+            <update_rate>30.0</update_rate>
+            <camera name="head">
+                <horizontal_fov>1.3962634</horizontal_fov>
+                <image>
+                    <width>800</width>
+                    <height>600</height>
+                    <format>R8G8B8</format>
+                </image>
+                <clip>
+                    <near>0.02</near>
+                    <far>300</far>
+                </clip>
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.007</stddev>
+                </noise>
+            </camera>
+            <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+                <alwaysOn>true</alwaysOn>
+                <updateRate>0.0</updateRate>
+                <cameraName>camera</cameraName>
+                <imageTopicName>image_raw</imageTopicName>
+                <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+                <frameName>camera_optical_frame</frameName>
+                <hackBaseline>0.07</hackBaseline>
+                <distortionK1>0.0</distortionK1>
+                <distortionK2>0.0</distortionK2>
+                <distortionK3>0.0</distortionK3>
+                <distortionT1>0.0</distortionT1>
+                <distortionT2>0.0</distortionT2>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+    <!-- Joint state publisher plugin -->
+    <gazebo>
+        <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+            <ros>
+                <namespace>/</namespace>
+                <remapping>joint_states:=joint_states</remapping>
+            </ros>
+            <update_rate>50</update_rate>
+            <joint_name>z_joint</joint_name>
+            <joint_name>x_joint</joint_name>
+            <joint_name>y_joint</joint_name>
+            <joint_name>theta_joint</joint_name>
+        </plugin>
+    </gazebo>
+</robot>

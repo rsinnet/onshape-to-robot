@@ -1,13 +1,39 @@
 services:
+  # ros2:
+  #   image: ros2
+  #   build:
+  #     dockerfile: ros2.dockerfile
+  #   environment:
+  #     - DISPLAY=host.docker.internal:0.0
+  #     - ROBOT_PACKAGE=$ROBOT_PACKAGE
+  #     - QT_X11_NO_MITSHM=1
+  #   volumes:
+  #     - ./$ROBOT_PACKAGE:/workspace/src/$ROBOT_PACKAGE:ro
+  #     - ./otr_ros2_entrypoint.sh:/otr_ros2_entrypoint.sh:ro
+  #   entrypoint: ["/bin/bash", "-c", "/otr_ros2_entrypoint.sh"]
+
   ros2:
     image: ros2
-    build:
-      dockerfile: ros2.dockerfile
     environment:
       - DISPLAY=host.docker.internal:0.0
-      - ROBOT_PACKAGE=$ROBOT_PACKAGE
+      - ROBOT_PACKAGE=pnp_robot_description
       - QT_X11_NO_MITSHM=1
     volumes:
-      - ./$ROBOT_PACKAGE:/workspace/src/$ROBOT_PACKAGE:ro
+      - ./pnp_robot_description:/workspace/src/pnp_robot_description:ro
       - ./otr_ros2_entrypoint.sh:/otr_ros2_entrypoint.sh:ro
+      - ./pnp_robot_description/worlds/pnp_world.sdf:/root/.gazebo/worlds/pnp_world.sdf
     entrypoint: ["/bin/bash", "-c", "/otr_ros2_entrypoint.sh"]
+  # command: ros2 launch ros_gz_sim gz_sim.launch.py gz_args:="/root/.gazebo/worlds/pnp_world.sdf"
+
+  # gzclient:
+  #   image: gazebo
+  #   container_name: gazebo_client
+  #   environment:
+  #     - DISPLAY=host.docker.internal:0.0
+  #     - GAZEBO_MASTER_URI=http://gzserver:11345
+  #     - QT_X11_NO_MITSHM=1
+  #   volumes:
+  #     - /tmp/.X11-unix:/tmp/.X11-unix:rw
+  #   depends_on:
+  #     - gzserver
+  #   command: gzclient --verbose
